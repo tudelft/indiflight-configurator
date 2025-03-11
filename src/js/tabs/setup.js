@@ -256,7 +256,9 @@ setup.initialize = function (callback) {
                                                                 'WAITING_FOR_THROW',
                                                                 'THROW_NOT_READY',
                                                                 'CATAPULT_NOT_READY',
-                                                                'NN_MODE']);
+                                                                'NN_NODE',
+                                                                'EKF',
+                                                                'POS_SETPOINT']);
             }
 
             // Always the latest element

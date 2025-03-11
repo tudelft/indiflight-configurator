@@ -1637,6 +1637,12 @@
     "portsFunction_HIL": {
         "message": "HIL"
     },
+    "portsFunction_ACTUATORS_T4": {
+        "message": "ACTUATORS_T4"
+    },
+    "portsFunction_UROS": {
+        "message": "UROS"
+    },
     "portsFunction_TELEMETRY_MSP": {
         "message": "MSP"
     },

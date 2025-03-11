@@ -53,6 +53,8 @@ function MspHelper() {
     'VTX_MSP': 17,
     'TELEMETRY_PI': 18,
     'HIL': 19,
+    'ACTUATORS_T4': 20,
+    'UROS': 21,
     };
 
     self.REBOOT_TYPES = {
