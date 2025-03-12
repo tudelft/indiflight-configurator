@@ -97,7 +97,7 @@ jobs:
         if: ${{ inputs.debug_build || matrix.name == 'Android' }}
 
       - name: Publish build artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: Betaflight-Configurator${{ inputs.debug_build == 'true' && '-Debug' || '' }}-${{ matrix.name }}
           path: release/
