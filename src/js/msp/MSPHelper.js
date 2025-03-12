@@ -54,7 +54,7 @@ function MspHelper() {
     'TELEMETRY_PI': 18,
     'HIL': 19,
     'ACTUATORS_T4': 20,
-    'UROS': 21,
+    'TELEMETRY_UROS': 21,
     };
 
     self.REBOOT_TYPES = {

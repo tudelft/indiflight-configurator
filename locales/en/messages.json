@@ -1640,7 +1640,7 @@
     "portsFunction_ACTUATORS_T4": {
         "message": "ACTUATORS_T4"
     },
-    "portsFunction_UROS": {
+    "portsFunction_TELEMETRY_UROS": {
         "message": "UROS"
     },
     "portsFunction_TELEMETRY_MSP": {
