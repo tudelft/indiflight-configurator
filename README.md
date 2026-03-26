@@ -13,27 +13,42 @@ It runs as an application under different operating systems and allows you to co
 
 Various types of aircraft are supported by the tool and by Betaflight, e.g. quadcopters, hexacopters, octocopters and fixed-wing aircraft.
 
-## tblaha: How to run on Ubuntu 22.04
+## How to build from source
 
-Install the `yarn` package manager via the `npm` package manager, which is in turn installed via the `apt` package manager (...). Also install the correct version of `node` (v16):
+### Prerequisites
+
+Install `nvm` (Node Version Manager) following the instructions at https://nodejs.org/en/download, then install Node.js 16:
+
 ```bash
-sudo apt install libatomic1 npm
-sudo npm install -g gulp-cli yarn
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash
-source ~/.bashrc
 nvm install 16
 ```
 
-Clone repo, install dependencies and then compile:
+Install `yarn` and `gulp-cli` globally:
+
 ```bash
-git clone git@github.com/tblaha/betaflight-configurator
-cd betaflight-configurator
-git checkout 10.10-pi
-yarn install # this installs the dependency node modules
-yarn gulp debug # the builds the application using the debug profile and downloads the NWjs
+npm install -g yarn gulp-cli
 ```
 
-In the future, you can run with either `yarn gulp debug` or with `./debug/betaflight-configurator/linux64/betaflight-configurator`.
+### Ubuntu 22.04
+
+Also install `libatomic1`:
+
+```bash
+sudo apt install libatomic1
+```
+
+### Clone, install, and build
+
+```bash
+git clone git@github.com:tblaha/indiflight-configurator.git
+cd indiflight-configurator
+yarn install
+yarn gulp debug
+```
+
+On Apple Silicon Macs, this will automatically build a native ARM64 version. On Intel Macs it builds for x86_64.
+
+The built app will be in `./debug/indiflight-configurator/<platform>/`.
 
 
 
@@ -142,12 +157,13 @@ List of possible values of `<task-name>`:
 To build or release only for one specific platform you can append the plaform after the `task-name`.
 If no platform is provided, the build for the host platform is run.
 
-* **MacOS X** use `yarn gulp <task-name> --osx64`
-* **Linux** use `yarn gulp <task-name> --linux64` 
+* **macOS (Apple Silicon)** use `yarn gulp <task-name> --osx-arm64`
+* **macOS (Intel)** use `yarn gulp <task-name> --osx64`
+* **Linux** use `yarn gulp <task-name> --linux64`
 * **Windows** use `yarn gulp <task-name> --win64`
 * **Android** use `yarn gulp <task-name> --android`
 
-**Note:** Support for cross-platform building is very limited due to the requirement for platform specific build tools. If in doubt, build on the target platform.
+**Note:** Support for cross-platform building is very limited due to the requirement for platform specific build tools. If in doubt, build on the target platform. `--osx-arm64` and `--osx64` cannot be built simultaneously.
 
 You can also use multiple platforms e.g. `yarn gulp <taskname> --osx64 --linux64`. Other platforms like `--win32`, `--linux32` and `--armv8` can be used too, but they are not officially supported, so use them at your own risk.
 

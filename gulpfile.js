@@ -21,7 +21,13 @@ const yarn = require("gulp-yarn");
 const rename = require('gulp-rename');
 const replace = require('gulp-replace');
 const jeditor = require("gulp-json-editor");
-const xmlTransformer = require("gulp-xml-transformer");
+let xmlTransformer;
+try {
+    xmlTransformer = require("gulp-xml-transformer");
+} catch (e) {
+    // gulp-xml-transformer depends on libxmljs2 (native module) which may
+    // fail to compile on some platforms. It is only needed for Cordova builds.
+}
 const os = require('os');
 const git = require('simple-git')();
 const source = require('vinyl-source-stream');
@@ -133,12 +139,12 @@ gulp.task('default', debugBuild);
 
 // Get platform from commandline args
 // #
-// # gulp <task> [<platform>]+        Run only for platform(s) (with <platform> one of --linux64, --linux32, --armv8, --osx64, --win32, --win64, or --android)
+// # gulp <task> [<platform>]+        Run only for platform(s) (with <platform> one of --linux64, --linux32, --armv8, --osx64, --osx-arm64, --win32, --win64, or --android)
 // #
 function getInputPlatforms() {
-    const supportedPlatforms = ['linux64', 'linux32', 'armv8', 'osx64', 'win32', 'win64', 'android'];
+    const supportedPlatforms = ['linux64', 'linux32', 'armv8', 'osx64', 'osx-arm64', 'win32', 'win64', 'android'];
     const platforms = [];
-    const regEx = /--(\w+)/;
+    const regEx = /--([\w-]+)/;
 
     for (let i = 3; i < process.argv.length; i++) {
         const arg = process.argv[i].match(regEx)[1];
@@ -181,7 +187,7 @@ function getDefaultPlatform() {
     let defaultPlatform;
     switch (os.platform()) {
     case 'darwin':
-        defaultPlatform = 'osx64';
+        defaultPlatform = (os.arch() === 'arm64') ? 'osx-arm64' : 'osx64';
 
         break;
     case 'linux':
@@ -218,6 +224,7 @@ function getRunDebugAppCommand(arch) {
     let command;
 
     switch (arch) {
+    case 'osx-arm64':
     case 'osx64':
         const packageName = `${metadata.name}.app`;
         command = `open ${path.join(DEBUG_DIR, metadata.name, arch, packageName)}`;
@@ -478,6 +485,12 @@ function listPostBuildTasks(folder) {
         });
     }
 
+    if (platforms.indexOf('osx-arm64') !== -1) {
+        postBuildTasks.push(function post_build_osx_arm64(done) {
+            return post_build('osx-arm64', folder, done);
+        });
+    }
+
     // We need to return at least one task, if not gulp will throw an error
     if (postBuildTasks.length === 0) {
         postBuildTasks.push(function post_build_none(done) {
@@ -500,6 +513,11 @@ function post_build(arch, folder, done) {
     if (arch === 'armv8') {
         console.log('Moving armv8 build from "linux32" to "armv8" directory...');
         fse.moveSync(path.join(folder, metadata.name, 'linux32'), path.join(folder, metadata.name, 'armv8'));
+    }
+
+    if (arch === 'osx-arm64') {
+        console.log('Moving osx-arm64 build from "osx64" to "osx-arm64" directory...');
+        fse.moveSync(path.join(folder, metadata.name, 'osx64'), path.join(folder, metadata.name, 'osx-arm64'));
     }
 
     return done();
@@ -584,9 +602,97 @@ function injectARMCache(flavor, done) {
     }
 }
 
+function injectOSXARM64Cache(flavor, done) {
+    const flavorPostfix = `-${flavor}`;
+    const flavorDownloadPostfix = flavor !== 'normal' ? `-${flavor}` : '';
+    clean_cache().then(function() {
+        if (!fs.existsSync('./cache')) {
+            fs.mkdirSync('./cache');
+        }
+        fs.closeSync(fs.openSync('./cache/_OSX_ARM64_IS_CACHED', 'w'));
+        const versionFolder = `./cache/${nwBuilderOptions.version}${flavorPostfix}`;
+        if (!fs.existsSync(versionFolder)) {
+            fs.mkdirSync(versionFolder);
+        }
+        const osx64Folder = `${versionFolder}/osx64`;
+        if (!fs.existsSync(osx64Folder)) {
+            fs.mkdirSync(osx64Folder);
+        }
+        const downloadedArchivePath = `${versionFolder}/nwjs${flavorPostfix}-v${nwBuilderOptions.version}-osx-arm64.zip`;
+        const downloadUrl = `https://dl.nwjs.io/v${nwBuilderOptions.version}/nwjs${flavorDownloadPostfix}-v${nwBuilderOptions.version}-osx-arm64.zip`;
+        if (fs.existsSync(downloadedArchivePath)) {
+            console.log('Prebuilt macOS ARM64 binaries found in cache');
+            downloadDoneOSXARM64(flavorDownloadPostfix, downloadedArchivePath, versionFolder, done);
+        } else {
+            console.log(`Downloading prebuilt macOS ARM64 binaries from "${downloadUrl}"...`);
+            process.stdout.write('> Starting download...\r');
+            const armBuildBinary = fs.createWriteStream(downloadedArchivePath);
+            https.get(downloadUrl, function(res) {
+                const totalBytes = res.headers['content-length'];
+                let downloadedBytes = 0;
+                res.pipe(armBuildBinary);
+                res.on('data', function (chunk) {
+                    downloadedBytes += chunk.length;
+                    process.stdout.write(`> ${parseInt((downloadedBytes * 100) / totalBytes)}% done             \r`);
+                });
+                armBuildBinary.on('finish', function() {
+                    process.stdout.write('> 100% done             \n');
+                    armBuildBinary.close(function() {
+                        downloadDoneOSXARM64(flavorDownloadPostfix, downloadedArchivePath, versionFolder, done);
+                    });
+                });
+            });
+        }
+    });
+
+    function downloadDoneOSXARM64(flavorDownload, downloadedArchivePath, versionFolder, done) {
+        console.log('Injecting prebuilt macOS ARM64 binaries into osx64 cache...');
+        const extractedName = `nwjs${flavorDownload}-v${nwBuilderOptions.version}-osx-arm64`;
+        const unzipCmd = `unzip -o -q "${downloadedArchivePath}" -d "${versionFolder}"`;
+        child_process.exec(unzipCmd, function(err) {
+            if (err) {
+                console.log(err);
+                process.exit(1);
+            }
+            const extractedDir = path.join(versionFolder, extractedName);
+            const osx64Dir = path.join(versionFolder, 'osx64');
+            fse.copySync(extractedDir, osx64Dir);
+            fse.removeSync(extractedDir);
+            done();
+        });
+    }
+}
+
 function buildNWAppsWrapper(platforms, flavor, dir, done) {
     function buildNWAppsCallback() {
         buildNWApps(platforms, flavor, dir, done);
+    }
+
+    function handleOSXARM64() {
+        if (platforms.indexOf('osx-arm64') !== -1) {
+            if (platforms.indexOf('osx64') !== -1) {
+                console.log('Cannot build osx-arm64 and osx64 versions at the same time!');
+                process.exit(1);
+            }
+            removeItem(platforms, 'osx-arm64');
+            platforms.push('osx64');
+
+            if (!fs.existsSync('./cache/_OSX_ARM64_IS_CACHED')) {
+                console.log('Purging cache for macOS ARM64 injection...');
+                clean_cache().then(() => {
+                    injectOSXARM64Cache(flavor, buildNWAppsCallback);
+                });
+            } else {
+                buildNWAppsCallback();
+            }
+        } else {
+            if (platforms.indexOf('osx64') !== -1 && fs.existsSync('./cache/_OSX_ARM64_IS_CACHED')) {
+                console.log('Purging cache because it was previously overwritten with ARM64...');
+                clean_cache().then(buildNWAppsCallback);
+            } else {
+                buildNWAppsCallback();
+            }
+        }
     }
 
     if (platforms.indexOf('armv8') !== -1) {
@@ -601,17 +707,17 @@ function buildNWAppsWrapper(platforms, flavor, dir, done) {
         if (!fs.existsSync('./cache/_ARMv8_IS_CACHED', 'w')) {
             console.log('Purging cache because it needs to be overwritten...');
             clean_cache().then(() => {
-                injectARMCache(flavor, buildNWAppsCallback);
+                injectARMCache(flavor, handleOSXARM64);
             });
         } else {
-            buildNWAppsCallback();
+            handleOSXARM64();
         }
     } else {
         if (platforms.indexOf('linux32') !== -1 && fs.existsSync('./cache/_ARMv8_IS_CACHED')) {
             console.log('Purging cache because it was previously overwritten...');
-            clean_cache().then(buildNWAppsCallback);
+            clean_cache().then(handleOSXARM64);
         } else {
-            buildNWAppsCallback();
+            handleOSXARM64();
         }
     }
 }
@@ -863,6 +969,37 @@ function release_osx64(appDirectory) {
     );
 }
 
+// Create distribution package for macOS ARM64 platform
+function release_osx_arm64(appDirectory) {
+    const appdmg = require('./gulp-appdmg');
+
+    // The appdmg does not generate the folder correctly, manually
+    createDirIfNotExists(RELEASE_DIR);
+
+    // The src pipe is not used
+    return gulp.src(['.'])
+        .pipe(appdmg({
+            target: path.join(RELEASE_DIR, getReleaseFilename('macOS-arm64', 'dmg')),
+            basepath: path.join(appDirectory, metadata.name, 'osx-arm64'),
+            specification: {
+                title: 'Indiflight Configurator',
+                contents: [
+                    { 'x': 448, 'y': 342, 'type': 'link', 'path': '/Applications' },
+                    { 'x': 192, 'y': 344, 'type': 'file', 'path': `${metadata.name}.app`, 'name': 'Indiflight Configurator.app' },
+                ],
+                background: path.join(__dirname, 'assets/osx/dmg-background.png'),
+                format: 'UDZO',
+                window: {
+                    size: {
+                        width: 638,
+                        height: 479,
+                    },
+                },
+            },
+        }),
+    );
+}
+
 // Create the dir directory, with write permissions
 function createDirIfNotExists(dir) {
     fs.mkdir(dir, '0775', function(err) {
@@ -912,6 +1049,12 @@ function listReleaseTasks(isReleaseBuild, appDirectory) {
     if (platforms.indexOf('osx64') !== -1) {
         releaseTasks.push(function () {
             return release_osx64(appDirectory);
+        });
+    }
+
+    if (platforms.indexOf('osx-arm64') !== -1) {
+        releaseTasks.push(function () {
+            return release_osx_arm64(appDirectory);
         });
     }
 
