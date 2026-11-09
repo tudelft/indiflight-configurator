@@ -6,6 +6,7 @@ import FC from "../js/fc";
 import { disconnect, isDrivenRebootTarget, scheduleRebootReconnect } from "../js/serial_backend";
 import DeviceHandler from "../js/device_handler";
 import { getConnectionState, State } from "../js/connection_state";
+import { isIndiflight } from "../js/utils/indiflight";
 
 const DEFAULT_COMMAND_TIMEOUT_MS = 2000;
 const SAVE_COMMAND_TIMEOUT_MS = 5000;
@@ -19,6 +20,11 @@ const RECONNECT_DELAY_MS = 500;
 export const MIN_FC_VERSION_FOR_MSP_CLI = "4.5.4";
 
 export function isMspCliSupported() {
+    // Indiflight reports 5.x but only implements the classic `#` CLI, not the MSP-framed one.
+    if (isIndiflight(FC.CONFIG)) {
+        return false;
+    }
+
     const version = FC.CONFIG?.flightControllerVersion;
     if (!version) {
         return false;
