@@ -3,7 +3,7 @@
         <div class="content_wrapper">
             <div class="content_top">
                 <div class="logowrapper">
-                    <img src="/images/bf_logo_white.svg" alt="" />
+                    <img src="/images/if_logo_dark.svg" alt="" />
                     <div v-html="$t('defaultWelcomeIntro')"></div>
                 </div>
             </div>

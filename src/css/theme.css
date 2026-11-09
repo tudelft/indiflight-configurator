@@ -9,19 +9,19 @@
 @source "../../nuxt-ui.vite.js";
 
 @theme static {
-    /* Extending Tailwind colors with Betaflight primary colors */
+    /* Extending Tailwind colors with Indiflight primary colors */
     /* Used for Nuxt UI and referenced further in theme.css */
-    --color-primary-50: #fffeea;
-    --color-primary-100: #fffac5;
-    --color-primary-200: #fff685;
-    --color-primary-300: #ffea46;
-    --color-primary-400: #ffc526;
-    --color-primary-500: #ffbb00;
-    --color-primary-600: #e29000;
-    --color-primary-700: #bb6502;
-    --color-primary-800: #984e08;
-    --color-primary-900: #7c400b;
-    --color-primary-950: #482100;
+    --color-primary-50: #ecfbff;
+    --color-primary-100: #d4f4fe;
+    --color-primary-200: #a9e8fc;
+    --color-primary-300: #6fd6f7;
+    --color-primary-400: #2bbfe9;
+    --color-primary-500: #00a6d6;
+    --color-primary-600: #0085b0;
+    --color-primary-700: #006a8e;
+    --color-primary-800: #075874;
+    --color-primary-900: #0b4961;
+    --color-primary-950: #052e40;
 
     --color-neutral-850: oklch(23.5% 0 0);
 }
@@ -42,10 +42,10 @@ html {
     --primary-900: var(--color-primary-900);
     --primary-950: var(--color-primary-950);
 
-    --primary-transparent-1: rgba(255, 187, 0, 0.1);
-    --primary-transparent-2: rgba(255, 187, 0, 0.2);
-    --primary-transparent-3: rgba(255, 187, 0, 0.3);
-    --primary-transparent-4: rgba(255, 187, 0, 0.4);
+    --primary-transparent-1: rgba(0, 166, 214, 0.1);
+    --primary-transparent-2: rgba(0, 166, 214, 0.2);
+    --primary-transparent-3: rgba(0, 166, 214, 0.3);
+    --primary-transparent-4: rgba(0, 166, 214, 0.4);
 
     --surface-50: hsl(0, 0%, 100%);
     --surface-100: hsl(0, 0%, 98%);

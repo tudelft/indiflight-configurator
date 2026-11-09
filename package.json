@@ -1,9 +1,9 @@
 {
-  "name": "betaflight-app",
-  "productName": "Betaflight",
-  "displayName": "Betaflight - Configuration and management application",
-  "description": "Crossplatform configuration and management application for the Betaflight flight control firmware.",
-  "version": "2026.6.2",
+  "name": "indiflight-app",
+  "productName": "Indiflight",
+  "displayName": "Indiflight - Configuration and management application",
+  "description": "Crossplatform configuration and management application for the Indiflight flight control firmware, a Betaflight fork.",
+  "version": "2026.6.2-indi",
   "type": "module",
   "main": "index.html",
   "scripts": {
@@ -37,11 +37,11 @@
     "id": "main-window",
     "min_width": 1024,
     "min_height": 550,
-    "title": "Betaflight App"
+    "title": "Indiflight App"
   },
   "repository": {
     "type": "git",
-    "url": "github.com/betaflight/betaflight-configurator"
+    "url": "github.com/tudelft/indiflight-configurator"
   },
   "author": "The Betaflight open source project.",
   "license": "GPL-3.0",

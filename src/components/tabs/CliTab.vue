@@ -271,7 +271,7 @@ export default defineComponent({
 
 /* background-image needs CSS for Vite asset resolution */
 .tab-cli .cli-backdrop {
-    background-image: url("../../images/light-wide-1.svg");
+    background-image: url("../../images/if_logo_gray.svg");
 }
 
 /* Allow text selection in the CLI output area.

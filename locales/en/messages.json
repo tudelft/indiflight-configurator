@@ -952,7 +952,7 @@
         "message": "EEPROM <span class=\"message-positive\">saved</span>"
     },
     "defaultWelcomeIntro": {
-        "message": "Welcome to the <strong>Betaflight App</strong>, a utility designed to simplify updating, configuring and tuning of your flight controller."
+        "message": "Welcome to the <strong>Indiflight App</strong>, a utility designed to simplify updating, configuring and tuning of your flight controller."
     },
     "defaultHardwareHead": {
         "message": "Hardware"
@@ -8419,8 +8419,8 @@
         "description": "Color theme settings"
     },
     "colorThemeYellow": {
-        "message": "Yellow (default)",
-        "description": "Default yellow color theme"
+        "message": "Blue (default)",
+        "description": "Default color theme"
     },
     "colorThemeAmber": {
         "message": "Amber",
