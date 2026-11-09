@@ -32,6 +32,7 @@ ports.initialize = function (callback) {
         { name: 'TELEMETRY_UROS',       groups: ['telemetry'], sharableWith: ['msp'], notSharableWith: ['peripherals'], maxPorts: 1 },
         { name: 'HIL',                  groups: ['telemetry'], sharableWith: ['msp'], notSharableWith: ['peripherals'], maxPorts: 1 },
         { name: 'ACTUATORS_T4',         groups: ['telemetry'], sharableWith: ['msp'], notSharableWith: ['peripherals'], maxPorts: 1 },
+        { name: 'SERVOS_FEETECH',       groups: ['peripherals'], maxPorts: 1 },
         { name: 'IRC_TRAMP',            groups: ['peripherals'], maxPorts: 1 },
         { name: 'ESC_SENSOR',           groups: ['sensors'], maxPorts: 1 },
         { name: 'TBS_SMARTAUDIO',       groups: ['peripherals'], maxPorts: 1 },

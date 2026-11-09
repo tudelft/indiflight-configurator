@@ -55,6 +55,7 @@ function MspHelper() {
     'HIL': 19,
     'ACTUATORS_T4': 20,
     'TELEMETRY_UROS': 21,
+    'SERVOS_FEETECH': 22,
     };
 
     self.REBOOT_TYPES = {

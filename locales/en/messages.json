@@ -1643,6 +1643,9 @@
     "portsFunction_TELEMETRY_UROS": {
         "message": "UROS"
     },
+    "portsFunction_SERVOS_FEETECH": {
+        "message": "Feetech servos"
+    },
     "portsFunction_TELEMETRY_MSP": {
         "message": "MSP"
     },
