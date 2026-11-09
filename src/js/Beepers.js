@@ -1,4 +1,5 @@
 import { bit_check, bit_clear, bit_set } from "./bit";
+import { isIndiflight } from "./utils/indiflight";
 
 class Beepers {
     constructor(config, supportedConditions) {
@@ -29,6 +30,13 @@ class Beepers {
             { bit: 21, name: "CAM_CONNECTION_CLOSE", visible: true },
             { bit: 22, name: "RC_SMOOTHING_INIT_FAIL", visible: true },
         ];
+
+        if (isIndiflight(config)) {
+            beepers.push(
+                { bit: 23, name: "ARMING_GPS_NO_FIX", visible: true },
+                { bit: 24, name: "THROW_TO_ARM", visible: true },
+            );
+        }
 
         if (supportedConditions) {
             self._beepers = [];

@@ -305,6 +305,7 @@ import { gui_log } from "../../js/gui_log";
 import { ispConnected } from "../../js/utils/connection";
 import { addArrayElementsAfter, replaceArrayElement } from "../../js/utils/array";
 import { flightIndicator } from "../../../libraries/flightIndicators";
+import { isIndiflight } from "../../js/utils/indiflight";
 
 const { t } = useTranslation();
 
@@ -389,6 +390,16 @@ const prepareDisarmFlags = function () {
 
     if (semver.gte(cfg.apiVersion, API_VERSION_1_48)) {
         addArrayElementsAfter(elements, "POSHOLD", ["AUTOPILOT"]);
+    }
+
+    if (isIndiflight(cfg)) {
+        addArrayElementsAfter(elements, "MOTOR_PROTOCOL", [
+            "WAITING_FOR_THROW",
+            "THROW_NOT_READY",
+            "CATAPULT_NOT_READY",
+            "NN_MODE",
+            "EKF_OR_SETPOINT",
+        ]);
     }
 
     // Build arming flags state instead of manipulating DOM
@@ -723,9 +734,15 @@ function initializeInstruments() {
     // expose update function similar to legacy behavior
     globalThis.updateInstruments = function () {
         attitude.setRoll(fcStore.sensorData.kinematics[0]);
-        attitude.setPitch(fcStore.sensorData.kinematics[1]);
+        attitude.setPitch(displayPitch());
         heading.setHeading(fcStore.sensorData.kinematics[2]);
     };
+}
+
+// Indiflight reports pitch with the opposite sign
+function displayPitch() {
+    const pitch = fcStore.sensorData.kinematics[1];
+    return isIndiflight(fcStore.config) ? -pitch : pitch;
 }
 
 function initModel() {
@@ -745,7 +762,7 @@ function renderModel() {
     if (!modelInstance) {
         return;
     }
-    const x = fcStore.sensorData.kinematics[1] * -1 * 0.017453292519943295;
+    const x = displayPitch() * -1 * 0.017453292519943295;
     const y = (fcStore.sensorData.kinematics[2] * -1 - yaw_fix.value) * 0.017453292519943295;
     const z = fcStore.sensorData.kinematics[0] * -1 * 0.017453292519943295;
     modelInstance.rotateTo(x, y, z);

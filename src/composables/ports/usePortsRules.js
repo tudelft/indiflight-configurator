@@ -2,6 +2,7 @@ import FC from "../../js/fc";
 import { i18n } from "../../js/localization";
 import semver from "semver";
 import { API_VERSION_1_45, API_VERSION_1_47 } from "../../js/data_storage";
+import { isIndiflight } from "../../js/utils/indiflight";
 
 export function usePortsRules() {
     const functionRules = [
@@ -61,6 +62,24 @@ export function usePortsRules() {
         functionRules.push({ name: "VTX_MSP", groups: ["peripherals"], sharableWith: ["msp"], maxPorts: 1 });
     }
 
+    const indiflight = isIndiflight(FC.CONFIG);
+
+    if (indiflight) {
+        const telemetryRule = {
+            groups: ["telemetry"],
+            sharableWith: ["msp"],
+            notSharableWith: ["peripherals"],
+            maxPorts: 1,
+        };
+        functionRules.push(
+            { name: "TELEMETRY_PI", ...telemetryRule },
+            { name: "TELEMETRY_UROS", ...telemetryRule },
+            { name: "HIL", ...telemetryRule },
+            { name: "ACTUATORS_T4", ...telemetryRule },
+            { name: "SERVOS_FEETECH", groups: ["peripherals"], maxPorts: 1 },
+        );
+    }
+
     for (const rule of functionRules) {
         rule.displayName = i18n.getMessage(`portsFunction_${rule.name}`);
     }
@@ -84,6 +103,27 @@ export function usePortsRules() {
     if (FC.CONFIG && semver.gte(FC.CONFIG.apiVersion, API_VERSION_1_47)) {
         gpsBaudRates.push("230400");
         telemetryBaudRates.push("230400", "460800");
+    }
+
+    if (indiflight) {
+        // The Indiflight serial drivers (PI, HIL, T4, UROS) use the telemetry baud rate
+        const highBaudRates = [
+            "230400",
+            "250000",
+            "400000",
+            "460800",
+            "500000",
+            "921600",
+            "1000000",
+            "1500000",
+            "2000000",
+            "2470000",
+        ];
+        for (const list of [mspBaudRates, telemetryBaudRates]) {
+            const merged = [...new Set([...list, ...highBaudRates])];
+            merged.sort((a, b) => (a === "AUTO" ? -1 : b === "AUTO" ? 1 : Number(a) - Number(b)));
+            list.splice(0, list.length, ...merged);
+        }
     }
 
     const getRules = (group) => {

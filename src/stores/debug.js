@@ -5,6 +5,7 @@ import semver from "semver";
 import { API_VERSION_1_47 } from "../js/data_storage";
 import { addArrayElement, addArrayElementAfter } from "../js/utils/array";
 import { getDebugModes, getDebugFieldNames } from "../js/utils/debugModes";
+import { isIndiflight } from "../js/utils/indiflight";
 
 export const useDebugStore = defineStore("debug", () => {
     const fcStore = useFlightControllerStore();
@@ -34,6 +35,10 @@ export const useDebugStore = defineStore("debug", () => {
         const apiVersion = fcStore.config?.apiVersion;
         if (!apiVersion) {
             return baseFields;
+        }
+
+        if (isIndiflight(fcStore.config)) {
+            return [...baseFields.slice(0, baseFields.indexOf("RPM")), "INDI", "Position", "EKF", "Learner"];
         }
 
         const result = [...baseFields];

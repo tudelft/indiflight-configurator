@@ -142,6 +142,10 @@ class EscDshotDirectionMotorDriver {
     }
 
     _sendState() {
+        if (!this._numberOfMotors) {
+            return;
+        }
+
         const buffer = [];
 
         for (let i = 0; i < this._numberOfMotors; i++) {

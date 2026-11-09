@@ -884,7 +884,7 @@ function onOpen(openInfo) {
 
             if (semver.gte(FC.CONFIG.apiVersion, CONFIGURATOR.API_VERSION_ACCEPTED)) {
                 MSP.send_message(MSPCodes.MSP_FC_VARIANT, false, false, function () {
-                    if (FC.CONFIG.flightControllerIdentifier === "BTFL") {
+                    if (["BTFL", "INFL"].includes(FC.CONFIG.flightControllerIdentifier)) {
                         MSP.send_message(MSPCodes.MSP_FC_VERSION, false, false, function () {
                             gui_log(
                                 i18n.getMessage("fcInfoReceived", [
@@ -894,7 +894,11 @@ function onOpen(openInfo) {
                             );
 
                             MSP.send_message(MSPCodes.MSP_BUILD_INFO, false, false, function () {
-                                gui_log(i18n.getMessage("buildInfoReceived", [FC.CONFIG.buildInfo]));
+                                gui_log(
+                                    i18n.getMessage("buildInfoReceived", [
+                                        `${FC.CONFIG.buildInfo} ${FC.CONFIG.gitRevision}`.trim(),
+                                    ]),
+                                );
 
                                 MSP.send_message(MSPCodes.MSP_BOARD_INFO, false, false, processBoardInfo);
                             });

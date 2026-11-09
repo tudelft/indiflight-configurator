@@ -1368,6 +1368,26 @@
         "message": "Autopilot mode switch is active",
         "description": "Message that pops up to describe the AUTOPILOT arming disable flag"
     },
+    "initialSetupArmingDisableFlagsTooltipWAITING_FOR_THROW": {
+        "message": "Throw-to-arm is ready and waiting for the throw",
+        "description": "Message that pops up to describe the Indiflight THROW_READY arming disable flag"
+    },
+    "initialSetupArmingDisableFlagsTooltipTHROW_NOT_READY": {
+        "message": "Throw-to-arm switch is active, but the conditions for a throw are not met",
+        "description": "Message that pops up to describe the Indiflight NO_THROW arming disable flag"
+    },
+    "initialSetupArmingDisableFlagsTooltipCATAPULT_NOT_READY": {
+        "message": "Catapult mode is active, but the catapult is not ready to arm",
+        "description": "Message that pops up to describe the Indiflight NO_CATAPULT arming disable flag"
+    },
+    "initialSetupArmingDisableFlagsTooltipNN_MODE": {
+        "message": "NN control or HORIZON mode is active",
+        "description": "Message that pops up to describe the Indiflight NN_MODE arming disable flag"
+    },
+    "initialSetupArmingDisableFlagsTooltipEKF_OR_SETPOINT": {
+        "message": "The EKF is in use but has not converged, or the geofence is in an error state or triggered",
+        "description": "Message that pops up to describe the Indiflight EKF_OR_SETPOINT arming disable flag"
+    },
     "initialSetupArmingDisableFlagsTooltipARM_SWITCH": {
         "message": "One of the others disarm flags is active when arming",
         "description": "Message that pops up to describe the ARM_SWITCH arming disable flag"
@@ -2062,6 +2082,12 @@
     "beeperRC_SMOOTHING_INIT_FAIL": {
         "message": "Beep when armed and rc smoothing has not initialized filters"
     },
+    "beeperARMING_GPS_NO_FIX": {
+        "message": "Beep when arming and GPS has no fix"
+    },
+    "beeperTHROW_TO_ARM": {
+        "message": "Beep when throw-to-arm is ready for the throw"
+    },
     "configurationBeeperEnableAll": {
         "message": "Enable All"
     },
@@ -2274,6 +2300,21 @@
     },
     "portsFunction_VTX_MSP": {
         "message": "VTX (MSP + Displayport)"
+    },
+    "portsFunction_TELEMETRY_PI": {
+        "message": "PI"
+    },
+    "portsFunction_TELEMETRY_UROS": {
+        "message": "UROS"
+    },
+    "portsFunction_HIL": {
+        "message": "HIL"
+    },
+    "portsFunction_ACTUATORS_T4": {
+        "message": "T4 actuators"
+    },
+    "portsFunction_SERVOS_FEETECH": {
+        "message": "Feetech servos"
     },
     "pidTuningProfileOption": {
         "message": "Profile $1"
@@ -3123,6 +3164,38 @@
     "auxiliaryHelpMode_LAPTIMERRESET": {
         "message": "Reset the transponder lap timer",
         "description": "Help text to LAP TIMER RESET mode"
+    },
+    "auxiliaryHelpMode_POSITIONCONTROL": {
+        "message": "Position control using an external position source (e.g. motion capture) or the EKF",
+        "description": "Help text to Indiflight POSITION CONTROL mode"
+    },
+    "auxiliaryHelpMode_WAYPOINTS": {
+        "message": "Fly the stored waypoint plan. Requires POSITION CONTROL",
+        "description": "Help text to Indiflight WAYPOINTS mode"
+    },
+    "auxiliaryHelpMode_THROWTOARM": {
+        "message": "Arm automatically when the craft is thrown",
+        "description": "Help text to Indiflight THROWTOARM mode"
+    },
+    "auxiliaryHelpMode_CATAPULT": {
+        "message": "Launch the craft to a set height and direction",
+        "description": "Help text to Indiflight CATAPULT mode"
+    },
+    "auxiliaryHelpMode_LEARNER": {
+        "message": "Learn the vehicle dynamics from a sequence of input commands and synthesize a controller",
+        "description": "Help text to Indiflight LEARNER mode"
+    },
+    "auxiliaryHelpMode_LEGACYPIDs": {
+        "message": "Use the Betaflight PID controller instead of INDI",
+        "description": "Help text to Indiflight LEGACY PIDs mode"
+    },
+    "auxiliaryHelpMode_NNCONTROL": {
+        "message": "Neural network control",
+        "description": "Help text to Indiflight NN CONTROL mode"
+    },
+    "auxiliaryHelpMode_RESETHOME": {
+        "message": "While disarmed, reset the home position, baro ground level, EKF and geofence",
+        "description": "Help text to Indiflight RESET HOME mode"
     },
     "adjustmentsHelp": {
         "message": "Configure adjustment switches. See the 'in-flight adjustments' section of the manual for details. The changes that adjustment functions make are not saved automatically."

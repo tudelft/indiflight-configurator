@@ -17,6 +17,7 @@ import { showErrorDialog } from "../utils/showErrorDialog";
 import GUI, { TABS } from "../gui";
 import { OSD } from "../../components/tabs/osd/osd";
 import { reinitializeConnection } from "../serial_backend";
+import { isIndiflight } from "../utils/indiflight";
 
 // Used for LED_STRIP
 const ledDirectionLetters = ["n", "e", "s", "w", "u", "d"]; // in LSB bit order
@@ -83,6 +84,12 @@ function MspHelper() {
         LIDAR_TF: 15,
         FRSKY_OSD: 16,
         VTX_MSP: 17,
+        // Indiflight
+        TELEMETRY_PI: 18,
+        HIL: 19,
+        ACTUATORS_T4: 20,
+        TELEMETRY_UROS: 21,
+        SERVOS_FEETECH: 22,
     };
 
     self.REBOOT_TYPES = {
@@ -878,13 +885,14 @@ MspHelper.prototype.process_data = function (dataHandler) {
                     }
                     FC.CONFIG.buildInfo = String.fromCharCode.apply(null, buff);
 
-                    const gitRevisionLength = 7;
+                    // Indiflight sends up to 15 characters (hash plus an optional "+dirty" suffix)
+                    const gitRevisionLength = isIndiflight(FC.CONFIG) ? Math.min(15, data.remaining()) : 7;
                     buff = [];
                     for (let i = 0; i < gitRevisionLength; i++) {
                         buff.push(data.readU8());
                     }
 
-                    FC.CONFIG.gitRevision = String.fromCharCode.apply(null, buff);
+                    FC.CONFIG.gitRevision = String.fromCharCode.apply(null, buff).replace(/\0+$/, "");
                     console.log("Fw git rev:", FC.CONFIG.gitRevision);
 
                     if (semver.gte(FC.CONFIG.apiVersion, API_VERSION_1_46)) {
