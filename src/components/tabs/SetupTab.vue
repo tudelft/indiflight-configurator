@@ -158,30 +158,12 @@
                                 class: 'build-type',
                             },
                             {
-                                id: 'build-info',
-                                i18n: 'initialSetupInfoBuildInfo',
-                                slotName: 'build-info',
-                            },
-                            {
                                 id: 'build-firmware',
                                 i18n: 'initialSetupInfoBuildFirmware',
                                 slotName: 'build-firmware',
                             },
                         ]"
                     >
-                        <template #build-info>
-                            <template v-if="state.buildInfoButtons && state.buildInfoButtons.length">
-                                <span v-for="btn in state.buildInfoButtons" :key="btn.type" class="buildInfoBtn">
-                                    <a :href="btn.href" target="_blank" :title="btn.title"
-                                        ><strong>{{ btn.label }}</strong></a
-                                    >
-                                </span>
-                            </template>
-                            <template v-else>
-                                <span v-html="state.buildInfoHtml"></span>
-                            </template>
-                        </template>
-
                         <template #build-firmware>
                             <span v-if="state.buildOptionsValid" class="buildInfoBtn">
                                 <a
@@ -189,14 +171,6 @@
                                     :title="$t('initialSetupInfoBuildOptionList')"
                                     @click.prevent="openBuildOptionsDialog"
                                     ><strong>{{ $t("initialSetupInfoBuildOptions") }}</strong></a
-                                >
-                            </span>
-                            <span v-if="state.buildKeyValid" class="buildInfoBtn">
-                                <a
-                                    :href="state.buildRoot + '/hex'"
-                                    target="_blank"
-                                    :title="$t('initialSetupInfoBuildDownload')"
-                                    ><strong>{{ $t("initialSetupInfoBuildDownload") }}</strong></a
                                 >
                             </span>
                         </template>
@@ -336,11 +310,7 @@ const state = reactive({
 
     attitude: { roll: 0, pitch: 0, heading: 0 },
     showSonarBox: true,
-    buildInfoHtml: "",
-    buildInfoButtons: [],
     buildOptionsValid: false,
-    buildKeyValid: false,
-    buildRoot: "",
     buildOptionsArray: [],
     buildInfoDialogTitle: "",
     sortedBuildOptions: [],
@@ -564,55 +534,14 @@ function process_html() {
         state.buildType = "";
     };
 
-    const getBuildRootBaseUri = function () {
-        return `https://build.betaflight.com/api/builds/${fcStore.config.buildKey}`;
-    };
-
-    const showBuildInfo = function () {
-        const isIspConnected = ispConnected();
-        const buildKeyValid = fcStore.config.buildKey.length === 32;
-        const buildRoot = getBuildRootBaseUri();
-        state.buildKeyValid = buildKeyValid;
-        state.buildRoot = buildRoot;
-
-        // prefer rendering buttons via Vue template to ensure styles apply
-        if (buildKeyValid && isIspConnected) {
-            state.buildInfoButtons = [
-                {
-                    type: "log",
-                    href: `${buildRoot}/log`,
-                    title: `${t("initialSetupInfoBuildLog")}: ${buildRoot}/log`,
-                    label: t("initialSetupInfoBuildLog"),
-                },
-                {
-                    type: "config",
-                    href: `${buildRoot}/json`,
-                    title: `${t("initialSetupInfoBuildConfig")}: ${buildRoot}/json`,
-                    label: t("initialSetupInfoBuildConfig"),
-                },
-            ];
-            state.buildInfoHtml = "";
-        } else {
-            state.buildInfoButtons = [];
-            state.buildInfoHtml = isIspConnected ? t("initialSetupNoBuildInfo") : t("initialSetupNotOnline");
-        }
-    };
-
-    // removed unused hideBuildInfo function to reduce unused code warnings
-    // kept behavior inline where needed
-
     const showBuildFirmware = function () {
         const isIspConnected = ispConnected();
         const buildOptionsValid =
             ((semver.eq(fcStore.config.apiVersion, API_VERSION_1_45) && isIspConnected) ||
                 semver.gte(fcStore.config.apiVersion, API_VERSION_1_46)) &&
             fcStore.config.buildOptions.length;
-        const buildKeyValid = fcStore.config.buildKey.length === 32;
-        const buildRoot = getBuildRootBaseUri();
 
         state.buildOptionsValid = !!buildOptionsValid;
-        state.buildKeyValid = !!buildKeyValid;
-        state.buildRoot = buildRoot;
         state.buildOptionsArray = buildOptionsValid ? fcStore.config.buildOptions : [];
     };
 
@@ -625,13 +554,10 @@ function process_html() {
 
         if (semver.gte(fcStore.config.apiVersion, API_VERSION_1_45)) {
             showBuildType();
-            showBuildInfo();
             showBuildFirmware();
         } else {
             hideBuildType();
-            state.buildInfoHtml = "";
             state.buildOptionsValid = false;
-            state.buildKeyValid = false;
         }
     }
 

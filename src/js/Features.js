@@ -1,7 +1,6 @@
 import { bit_check, bit_set, bit_clear } from "./bit";
 import { API_VERSION_1_45, API_VERSION_1_46, API_VERSION_1_47 } from "./data_storage";
 import semver from "semver";
-import { tracking } from "./Analytics";
 
 const Features = function (config) {
     const self = this;
@@ -94,7 +93,6 @@ const Features = function (config) {
 Features.prototype.getMask = function () {
     const self = this;
 
-    tracking.sendChangeEvents(tracking.EVENT_CATEGORIES.FLIGHT_CONTROLLER, self._analyticsChanges);
     self._analyticsChanges = {};
 
     return self._featureMask;

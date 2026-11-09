@@ -894,39 +894,6 @@ export default defineComponent({
                     }
                 }, 2000);
             }
-
-            // Track logging status
-            let loggingStatus;
-            if (dataflashPresent.value && sdcardState.value === MSP.SDCARD_STATE_NOT_PRESENT) {
-                loggingStatus = "Dataflash";
-            } else {
-                switch (sdcardState.value) {
-                    case MSP.SDCARD_STATE_NOT_PRESENT:
-                        loggingStatus = "SdCard: NotPresent";
-                        break;
-                    case MSP.SDCARD_STATE_FATAL:
-                        loggingStatus = "SdCard: Error";
-                        break;
-                    case MSP.SDCARD_STATE_READY:
-                        loggingStatus = "SdCard: Ready";
-                        break;
-                    case MSP.SDCARD_STATE_CARD_INIT:
-                        loggingStatus = "SdCard: Init";
-                        break;
-                    case MSP.SDCARD_STATE_FS_INIT:
-                        loggingStatus = "SdCard: FsInit";
-                        break;
-                    default:
-                        loggingStatus = "SdCard: Unknown";
-                }
-            }
-
-            if (typeof tracking !== "undefined") {
-                tracking.sendEvent(tracking.EVENT_CATEGORIES.FLIGHT_CONTROLLER, "DataLogging", {
-                    logSize: fcStore.dataflash?.usedSize || 0,
-                    logStatus: loggingStatus,
-                });
-            }
         }
 
         async function loadData() {

@@ -5,42 +5,12 @@
             <div class="grid-row grid-box col5">
                 <div class="col-span-3">
                     <UiBox :title="$t('defaultDocumentationHead')" class="sm:h-full">
-                        <p v-html="$t('defaultDocumentation')"></p>
-                        <ul>
-                            <li>
-                                <span v-html="$t('defaultDocumentation1')"></span>
-                            </li>
-                            <li>
-                                <span v-html="$t('defaultDocumentation2')"></span>
-                            </li>
-                        </ul>
+                        <p v-html="$t('indiflightDocumentation')"></p>
                     </UiBox>
                 </div>
                 <div class="col-span-2">
                     <UiBox :title="$t('defaultSupportHead')" class="sm:h-full">
-                        <p v-html="$t('defaultSupport')"></p>
-                        <ul>
-                            <li>
-                                <span v-html="$t('defaultSupport1')"></span>
-                            </li>
-                            <li>
-                                <span v-html="$t('defaultSupport2')"></span>
-                            </li>
-                            <li>
-                                <span v-html="$t('defaultSupport3')"></span>
-                            </li>
-                        </ul>
-                        <div class="subline">
-                            <strong v-html="$t('defaultSupportSubline2')"></strong>
-                        </div>
-                        <ul>
-                            <li>
-                                <span v-html="$t('defaultSupport4')"></span>
-                            </li>
-                            <li>
-                                <span v-html="$t('defaultSupport5')"></span>
-                            </li>
-                        </ul>
+                        <p v-html="$t('indiflightSupport')"></p>
                     </UiBox>
                 </div>
             </div>

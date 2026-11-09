@@ -3,8 +3,6 @@ import LandingTab from "../components/tabs/LandingTab.vue";
 import PortsTab from "../components/tabs/PortsTab.vue";
 import ServosTab from "../components/tabs/ServosTab.vue";
 import ConfigurationTab from "../components/tabs/ConfigurationTab.vue";
-import UserProfileTab from "../components/tabs/UserProfileTab.vue";
-import BackupsTab from "../components/tabs/BackupsTab.vue";
 import LoggingTab from "../components/tabs/LoggingTab.vue";
 import GpsTab from "../components/tabs/GpsTab.vue";
 import AuxiliaryTab from "../components/tabs/AuxiliaryTab.vue";
@@ -24,7 +22,6 @@ import SetupTab from "../components/tabs/SetupTab.vue";
 import PidTuningTab from "../components/tabs/PidTuningTab.vue";
 import PreflightTab from "../components/tabs/PreflightTab.vue";
 import VtxTab from "../components/tabs/VtxTab.vue";
-import PresetsTab from "../components/tabs/PresetsTab.vue";
 import AutotuneTab from "../components/tabs/AutotuneTab.vue";
 import BlackboxViewerTab from "../components/tabs/BlackboxViewerTab.vue";
 
@@ -34,8 +31,6 @@ export const VueTabComponents = {
     ports: PortsTab,
     servos: ServosTab,
     configuration: ConfigurationTab,
-    user_profile: UserProfileTab,
-    backups: BackupsTab,
     logging: LoggingTab,
     gps: GpsTab,
     auxiliary: AuxiliaryTab,
@@ -55,7 +50,6 @@ export const VueTabComponents = {
     pid_tuning: PidTuningTab,
     preflight: PreflightTab,
     vtx: VtxTab,
-    presets: PresetsTab,
     autotune: AutotuneTab,
     blackbox_viewer: BlackboxViewerTab,
 };

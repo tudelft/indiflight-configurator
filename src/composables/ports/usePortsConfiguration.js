@@ -1,11 +1,9 @@
-import { toRaw } from "vue";
 import FC from "../../js/fc";
 import MSP from "../../js/msp";
 import MSPCodes from "../../js/msp/MSPCodes";
 import { mspHelper } from "../../js/msp/MSPHelper";
 import { gui_log } from "../../js/gui_log";
 import { i18n } from "../../js/localization";
-import { tracking } from "../../js/Analytics";
 import { useReboot } from "../useReboot";
 
 export function usePortsConfiguration(ports, analyticsChanges, functionRules) {
@@ -62,8 +60,6 @@ export function usePortsConfiguration(ports, analyticsChanges, functionRules) {
     };
 
     const saveConfig = () => {
-        tracking.sendSaveAndChangeEvents(tracking.EVENT_CATEGORIES.FLIGHT_CONTROLLER, toRaw(analyticsChanges), "ports");
-
         // Clear analytics changes
         for (const key in analyticsChanges) {
             delete analyticsChanges[key];

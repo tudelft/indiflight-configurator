@@ -11,7 +11,6 @@ export const sidebarItems = [
     { key: "configuration", mode: "connected", i18n: "tabConfiguration", icon: "i-lucide-settings" },
     { key: "power", mode: "connected", i18n: "tabPower", icon: "i-lucide-battery" },
     { key: "failsafe", mode: "connected", i18n: "tabFailsafe", icon: "i-lucide-shield-alert", expert: true },
-    { key: "presets", mode: "connected", i18n: "tabPresets", icon: "i-lucide-wand-2" },
     { key: "pid_tuning", mode: "connected", i18n: "tabPidTuning", icon: "i-lucide-gauge" },
     { key: "receiver", mode: "connected", i18n: "tabReceiver", icon: "i-lucide-radio" },
     { key: "auxiliary", mode: "connected", i18n: "tabAuxiliary", icon: "i-lucide-toggle-right" },
@@ -44,9 +43,6 @@ export const sidebarItems = [
     { key: "cli", mode: "cli", i18n: "tabCLI", icon: "i-lucide-terminal" },
 
     { key: "log", mode: "shared", i18n: "tabLog", icon: "i-lucide-file-text", expert: true, hideInSidebar: true },
-
-    { key: "backups", mode: "loggedin", i18n: "tabBackups", icon: "i-lucide-database", hideInSidebar: true },
-    { key: "user_profile", mode: "loggedin", i18n: "tabUserProfile", icon: "i-lucide-user", hideInSidebar: true },
 ];
 
 export function isItemVisible(item, ctx) {

@@ -542,7 +542,6 @@ import MSPCodes from "@/js/msp/MSPCodes";
 import * as d3 from "d3";
 import { get as getConfig, set as setConfig } from "@/js/ConfigStorage";
 import { mspHelper } from "@/js/msp/MSPHelper";
-import { tracking } from "@/js/Analytics";
 // Import composables for proper state management
 import { useMotorsState } from "@/composables/motors/useMotorsState";
 import { useMotorTesting } from "@/composables/motors/useMotorTesting";
@@ -1404,15 +1403,6 @@ const handleSave = (reboot = true) => {
                 await saveAndReboot();
             } else {
                 await saveToEeprom();
-            }
-
-            // Only after a successful persist: record analytics and refresh the dirty baseline.
-            if (motorsState.analyticsChanges.value && Object.keys(motorsState.analyticsChanges.value).length > 0) {
-                tracking.sendSaveAndChangeEvents(
-                    tracking.EVENT_CATEGORIES.FLIGHT_CONTROLLER,
-                    motorsState.analyticsChanges.value,
-                    "motors",
-                );
             }
 
             // Reset state (clears changes and updates defaults)

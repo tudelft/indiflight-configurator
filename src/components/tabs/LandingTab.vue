@@ -7,68 +7,29 @@
                     <div v-html="$t('defaultWelcomeIntro')"></div>
                 </div>
             </div>
-            <SponsorTile sponsor-type="landing" />
             <div class="content_mid grid-row">
                 <div class="column third_left text1 grid-col col4">
-                    <div class="socialMediaParagraph">
-                        <h2 v-html="$t('defaultCommunityHead')"></h2>
-                        <div class="logoSocialMedia">
-                            <img src="/images/discord-logo-color.svg" alt="Discord" class="socialMediaLogo" />
-                        </div>
-                        <div class="socialMediaText" v-html="$t('defaultDiscordText')"></div>
-                    </div>
-                    <div class="socialMediaParagraph">
-                        <div class="logoSocialMedia">
-                            <img src="/images/reddit-logo.svg" alt="Reddit" class="socialMediaLogo" />
-                        </div>
-                        <div class="socialMediaText" v-html="$t('defaultRedditText')"></div>
-                    </div>
-                    <div class="socialMediaParagraph">
-                        <div class="logoSocialMedia">
-                            <img src="/images/flogo_RGB_HEX-1024.svg" alt="Facebook" class="socialMediaLogo" />
-                        </div>
-                        <div class="socialMediaText" v-html="$t('defaultFacebookText')"></div>
-                    </div>
-                </div>
-                <div class="column third_center text3 grid-col col4">
-                    <div class="wrap2">
-                        <h3 v-html="$t('defaultDonateHead')"></h3>
-                        <div v-html="$t('defaultDonateText')"></div>
-                        <div class="donate">
-                            <a
-                                href="https://paypal.me/betaflight"
-                                rel="noopener noreferrer"
-                                target="_blank"
-                                :title="$t('defaultDonate')"
-                            >
-                                <img src="/images/btn-donate.png" alt="Paypal" height="30" />
-                            </a>
-                        </div>
-                        <div v-html="$t('defaultDonateBottom')"></div>
-                    </div>
-                </div>
-                <div class="column third_right text2 list grid-col col4">
                     <div class="wrap">
-                        <h2 v-html="$t('defaultContributingHead')"></h2>
-                        <div v-html="$t('defaultContributingText')"></div>
+                        <h2>{{ $t("indiflightAboutHead") }}</h2>
+                        <div v-html="$t('indiflightAboutText')"></div>
                     </div>
                 </div>
-                <div class="column third_left text1 grid-col col4">
+                <div class="column third_center text2 list grid-col col4">
                     <div class="wrap">
-                        <h2 v-html="$t('statisticsDisclaimerHead')"></h2>
-                        <div class="statsCollection" v-html="$t('statisticsDisclaimer')"></div>
+                        <h2>{{ $t("indiflightSourceHead") }}</h2>
+                        <div v-html="$t('indiflightSourceText')"></div>
                     </div>
                 </div>
-                <div class="column third_center text2 grid-col col4">
+                <div class="column third_right text1 grid-col col4">
                     <div class="wrap">
-                        <h2 v-html="$t('defaultSoftwareHead')"></h2>
-                        <div v-html="$t('defaultSoftwareText')"></div>
+                        <h2>{{ $t("indiflightPrivacyHead") }}</h2>
+                        <div v-html="$t('indiflightPrivacyText')"></div>
                     </div>
                 </div>
-                <div class="column third_right text1 list grid-col col4">
+                <div class="column third_left text2 list grid-col col4">
                     <div class="wrap">
-                        <h2 v-html="$t('defaultHardwareHead')"></h2>
-                        <div v-html="$t('defaultHardwareText')"></div>
+                        <h2>{{ $t("defaultHardwareHead") }}</h2>
+                        <div v-html="$t('indiflightHardwareText')"></div>
                     </div>
                 </div>
             </div>
@@ -97,7 +58,6 @@
 <script>
 import { defineComponent, ref, onMounted } from "vue";
 import BaseTab from "./BaseTab.vue";
-import SponsorTile from "../sponsor/SponsorTile.vue";
 import GUI from "../../js/gui";
 import { i18n } from "../../js/localization";
 
@@ -105,7 +65,6 @@ export default defineComponent({
     name: "LandingTab",
     components: {
         BaseTab,
-        SponsorTile,
     },
     setup() {
         const availableLanguages = ref(["DEFAULT", ...i18n.getLanguagesAvailables()]);
@@ -157,8 +116,7 @@ export default defineComponent({
 }
 
 .text1,
-.text2,
-.text3 {
+.text2 {
     margin-top: 15px;
     margin-bottom: 15px;
     font-weight: normal;
@@ -170,12 +128,6 @@ export default defineComponent({
     overflow: hidden;
     padding: 0 15px;
     margin-top: auto;
-
-    .column {
-        .wrap2 {
-            padding: 10px;
-        }
-    }
 
     h2 {
         margin-bottom: 5px;
@@ -199,26 +151,6 @@ export default defineComponent({
             margin-left: 0;
             display: list-item;
         }
-    }
-
-    .text3 {
-        .wrap2 {
-            border: 3px solid var(--surface-300);
-            border-radius: 5px;
-            min-height: 187px;
-            font-size: 11px;
-        }
-        .donate {
-            margin-top: 10px;
-            text-align: center;
-        }
-    }
-}
-
-.donate {
-    img {
-        height: 2rem;
-        display: inline-block;
     }
 }
 
@@ -251,32 +183,6 @@ export default defineComponent({
     span {
         font-size: 22px;
         font-weight: 300;
-    }
-}
-
-.socialMediaParagraph {
-    margin-bottom: 15px;
-
-    .logoSocialMedia {
-        float: left;
-        width: 30px;
-
-        img {
-            height: 20px;
-            width: 20px;
-        }
-    }
-
-    .socialMediaLogo {
-        padding-top: 3px;
-    }
-
-    .socialMediaText {
-        margin-top: 0;
-        margin-left: 35px;
-        display: block;
-        font-weight: normal;
-        font-size: 12px;
     }
 }
 

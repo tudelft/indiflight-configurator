@@ -954,6 +954,36 @@
     "defaultWelcomeIntro": {
         "message": "Welcome to the <strong>Indiflight App</strong>, a utility designed to simplify updating, configuring and tuning of your flight controller."
     },
+    "indiflightAboutHead": {
+        "message": "About"
+    },
+    "indiflightAboutText": {
+        "message": "The Indiflight App is a fork of the Betaflight App for the <a href=\"https://github.com/tudelft/indiflight\" target=\"_blank\" rel=\"noopener noreferrer\">Indiflight</a> flight controller firmware. It also works with Betaflight firmware, but it is not supported by the Betaflight project: please report problems with this app or with Indiflight to the Indiflight developers, not to Betaflight."
+    },
+    "indiflightSourceHead": {
+        "message": "Source code and issues"
+    },
+    "indiflightSourceText": {
+        "message": "<ul><li><a href=\"https://github.com/tudelft/indiflight\" target=\"_blank\" rel=\"noopener noreferrer\">Indiflight firmware</a> (<a href=\"https://github.com/tudelft/indiflight/issues\" target=\"_blank\" rel=\"noopener noreferrer\">issues</a>)</li><li><a href=\"https://github.com/tudelft/indiflight-configurator\" target=\"_blank\" rel=\"noopener noreferrer\">Indiflight App</a> (<a href=\"https://github.com/tudelft/indiflight-configurator/issues\" target=\"_blank\" rel=\"noopener noreferrer\">issues</a>)</li></ul>"
+    },
+    "indiflightPrivacyHead": {
+        "message": "Privacy"
+    },
+    "indiflightPrivacyText": {
+        "message": "This app does not collect usage statistics and does not use any Betaflight online services: there is no login, cloud backup, cloud build, presets repository or support upload. Firmware is flashed from local files."
+    },
+    "indiflightHardwareText": {
+        "message": "Indiflight firmware is flashed from a local .hex, .bin or .uf2 file in the Firmware Flasher tab.<br /><br />Useful hardware utilities / drivers:<ul><li>For hardware using a CP210x USB to serial chip, the <b>CP210x Drivers</b> can be downloaded from <a href=\"https://www.silabs.com/software-and-tools/usb-to-uart-bridge-vcp-drivers\" target=\"_blank\" rel=\"noopener noreferrer\">here</a></li><li><b>Zadig</b> for Windows USB driver installation can be downloaded from <a href=\"https://zadig.akeo.ie/\" target=\"_blank\" rel=\"noopener noreferrer\">here</a></li></ul>"
+    },
+    "indiflightDocumentation": {
+        "message": "Indiflight-specific documentation is in the <a href=\"https://github.com/tudelft/indiflight\" target=\"_blank\" rel=\"noopener noreferrer\">Indiflight firmware repository</a>. Most settings work as in Betaflight 4.4, so the tab documentation buttons link to the Betaflight wiki."
+    },
+    "indiflightSupport": {
+        "message": "Please report problems with Indiflight or with this app in the issue trackers of the <a href=\"https://github.com/tudelft/indiflight/issues\" target=\"_blank\" rel=\"noopener noreferrer\">firmware</a> or the <a href=\"https://github.com/tudelft/indiflight-configurator/issues\" target=\"_blank\" rel=\"noopener noreferrer\">app</a>. Do not contact Betaflight support about Indiflight."
+    },
+    "indiflightFirmwareUpgradeRequired": {
+        "message": "The current version of the app may not support the firmware version on this device."
+    },
     "defaultHardwareHead": {
         "message": "Hardware"
     },

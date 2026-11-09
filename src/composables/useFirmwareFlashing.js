@@ -3,7 +3,6 @@ import { get as getConfig } from "../js/ConfigStorage";
 import { useDialog } from "./useDialog";
 import GUI from "../js/gui";
 import ConfigInserter from "../js/ConfigInserter";
-import { tracking } from "../js/Analytics";
 import read_hex_file from "../js/workers/hex_parser";
 import STM32 from "../js/protocols/webstm32";
 import ESP32 from "../js/protocols/esp32";
@@ -268,7 +267,6 @@ export function useFirmwareFlashing(params = {}) {
             noRebootSequence,
             flashManualBaud,
             flashManualBaudRate,
-            filename,
             resetFlashingState,
             selectedBoard,
             localFirmwareLoaded,
@@ -295,9 +293,6 @@ export function useFirmwareFlashing(params = {}) {
         console.log(`${logHead} Selected port:`, port);
 
         if (isDFU) {
-            tracking.sendEvent(tracking.EVENT_CATEGORIES.FLASHING, "DFU Flashing", {
-                filename: filename || null,
-            });
             DeviceHandler.dfuProtocol.connect(port, firmware, flashing_options);
         } else if (isSerial) {
             if (noRebootSequence) {
@@ -310,10 +305,6 @@ export function useFirmwareFlashing(params = {}) {
             if (flashManualBaud) {
                 baud = Number.parseInt(flashManualBaudRate) || 115200;
             }
-
-            tracking.sendEvent(tracking.EVENT_CATEGORIES.FLASHING, "Flashing", {
-                filename: filename || null,
-            });
 
             STM32.connect(port, baud, firmware, flashing_options);
         } else {
@@ -334,18 +325,12 @@ export function useFirmwareFlashing(params = {}) {
     /**
      * Flash a raw ESP32 .bin image over the serial ROM bootloader (browser Web Serial only).
      */
-    const flashEspFirmware = async (options = {}) => {
-        const { filename } = options;
-
+    const flashEspFirmware = async () => {
         const image = firmwareState.espBinary;
         if (!image) {
             flashingMessage?.($t?.("firmwareFlasherFirmwareNotLoaded"), FLASH_MESSAGE_TYPES?.INVALID);
             return false;
         }
-
-        tracking.sendEvent(tracking.EVENT_CATEGORIES.FLASHING, "ESP32 Flashing", {
-            filename: filename || null,
-        });
 
         // Let ESP32.connect() own environment gating (Web Serial only) and port
         // validation, so the correct message is shown on Tauri/Capacitor and when
@@ -373,7 +358,6 @@ export function useFirmwareFlashing(params = {}) {
             noRebootSequence,
             flashManualBaud,
             flashManualBaudRate,
-            filename,
             resetFlashingState,
             setFlashOnConnect,
             selectedBoard,
@@ -409,7 +393,6 @@ export function useFirmwareFlashing(params = {}) {
                 noRebootSequence,
                 flashManualBaud,
                 flashManualBaudRate,
-                filename,
                 resetFlashingState,
                 selectedBoard,
                 localFirmwareLoaded,
@@ -429,12 +412,10 @@ export function useFirmwareFlashing(params = {}) {
         const {
             connectLock,
             firmwareType,
-            filename,
             flashOnConnect,
             portAvailable,
             dfuAvailable,
             preservePreFlashingState,
-            pauseSponsorInterval,
             resumeSponsorInterval,
             enableFlashButton,
             enableDfuExitButton,
@@ -461,7 +442,6 @@ export function useFirmwareFlashing(params = {}) {
         report("start", { firmwareType, flashOnConnect, portAvailable });
 
         preservePreFlashingState?.();
-        pauseSponsorInterval?.();
 
         enableFlashButton?.(false);
         enableDfuExitButton?.(false);
@@ -470,10 +450,6 @@ export function useFirmwareFlashing(params = {}) {
 
         // UF2 save-only flow
         if (firmwareType === "UF2") {
-            tracking.sendEvent(tracking.EVENT_CATEGORIES.FLASHING, "UF2 Flashing", {
-                filename: filename || null,
-            });
-
             flashProgress?.(50);
             const saved = await saveFirmware?.();
             flashProgress?.(100);
@@ -503,7 +479,7 @@ export function useFirmwareFlashing(params = {}) {
             GUI.connect_lock = true;
             getConnectionState().beginDeviceReplacement();
             try {
-                const flashed = await flashEspFirmware({ filename });
+                const flashed = await flashEspFirmware();
                 if (!flashed) {
                     flashProgress?.(100);
                 }

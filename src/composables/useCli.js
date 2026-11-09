@@ -3,14 +3,12 @@ import { i18n } from "../js/localization";
 import BFClipboard from "../js/Clipboard";
 import { generateFilename } from "../js/utils/generate_filename";
 import GUI from "../js/gui";
-import BuildApi from "../js/BuildApi";
 import CONFIGURATOR from "../js/data_storage";
 import CliAutoComplete from "../js/CliAutoComplete";
 import { gui_log } from "../js/gui_log";
 import { serial } from "../js/serial";
 import { reinitializeConnection } from "../js/serial_backend";
 import FileSystem from "../js/FileSystem";
-import { ispConnected } from "../js/utils/connection";
 import { get as getConfig } from "../js/ConfigStorage";
 import { useCliAutocomplete } from "./useCliAutocomplete";
 import { highlightCliLine } from "../js/CliSyntaxHighlight";
@@ -85,44 +83,6 @@ function onCopyFailed(ex) {
     console.warn(ex);
 }
 
-async function submitSupportData(
-    data,
-    state,
-    clearHistory,
-    executeCommands,
-    writeToOutput,
-    getOutputHistory,
-    trackPollInterval,
-) {
-    clearHistory();
-    const api = new BuildApi();
-
-    let commands = await api.getSupportCommands();
-    if (!commands) {
-        alert("An error has occurred");
-        return;
-    }
-
-    commands = [`###\n# Problem description\n# ${data}\n###`, ...commands];
-    await executeCommands(commands.join("\n"));
-    const delay = setInterval(async () => {
-        const time = Date.now();
-        if (state.lastArrival < time - SERIAL_IDLE_MS) {
-            clearInterval(delay);
-            trackPollInterval?.(null);
-            const text = getOutputHistory();
-            let key = await api.submitSupportData(text);
-            if (!key) {
-                writeToOutput(i18n.getMessage("buildServerSupportRequestSubmission", ["** error **"]));
-                return;
-            }
-            state.lastSupportId = key;
-            writeToOutput(i18n.getMessage("buildServerSupportRequestSubmission", [key]));
-        }
-    }, 250);
-    trackPollInterval?.(delay);
-}
-
 export function useCli() {
     const autocomplete = useCliAutocomplete();
 
@@ -130,13 +90,11 @@ export function useCli() {
     const state = reactive({
         startProcessing: false,
         lastArrival: 0,
-        lastSupportId: null,
         lineDelayMs: 5,
         profileSwitchDelayMs: 100,
         commandInput: "",
         promptInput: "",
         snippetPreview: "",
-        supportDialogInput: "",
         copyButtonText: i18n.getMessage("cliCopyToClipboardBtn"),
         copyButtonWidth: "",
     });
@@ -154,10 +112,6 @@ export function useCli() {
     const cliWindowRef = ref(null);
     const commandInputRef = ref(null);
     const snippetPreviewOpen = ref(false);
-    const supportWarningOpen = ref(false);
-
-    // Support dialog callback
-    let supportDialogCallback = null;
 
     let scrollNearBottomPx = 40; // fallback; updated dynamically via ResizeObserver
     let cliResizeObserver = null;
@@ -175,7 +129,6 @@ export function useCli() {
     let flushing = false; // true during DOM mutations; prevents spurious scrollPinned flips
     let scrollRaf = null; // deferred scroll; separates DOM writes from scrollTop write (avoids forced reflow)
     let pastePollInterval = null;
-    let supportPollInterval = null;
 
     const flushOutput = () => {
         outputFlushRaf = null;
@@ -324,7 +277,7 @@ export function useCli() {
 
     const saveFile = async () => {
         const filename = generateFilename("cli", "txt");
-        const content = formatContentWithSupportId(outputHistory, state.lastSupportId);
+        const content = outputHistory;
 
         const file = await FileSystem.pickSaveFile(
             filename,
@@ -334,15 +287,8 @@ export function useCli() {
         await FileSystem.writeFile(file, content);
     };
 
-    const formatContentWithSupportId = (content, supportId) => {
-        if (supportId) {
-            content = `# Support ID: ${supportId}\n\n${content}`;
-        }
-        return content;
-    };
-
     const copyToClipboard = () => {
-        const text = formatContentWithSupportId(outputHistory, state.lastSupportId);
+        const text = outputHistory;
 
         function onCopySuccessful() {
             // Cancel any in-flight reset so a rapid second click cannot leave the
@@ -358,42 +304,6 @@ export function useCli() {
         }
 
         BFClipboard.writeText(text, onCopySuccessful, onCopyFailed);
-    };
-
-    const submitSupportRequest = async () => {
-        showSupportWarningDialog((data) =>
-            submitSupportData(
-                data,
-                state,
-                clearHistory,
-                executeCommands,
-                writeToOutput,
-                () => outputHistory,
-                (id) => {
-                    supportPollInterval = id;
-                },
-            ),
-        );
-    };
-
-    const showSupportWarningDialog = (onAccept) => {
-        supportDialogCallback = onAccept;
-        supportWarningOpen.value = true;
-    };
-
-    const handleSupportDialogSubmit = () => {
-        supportWarningOpen.value = false;
-        if (supportDialogCallback) {
-            supportDialogCallback(state.supportDialogInput);
-            supportDialogCallback = null;
-        }
-        state.supportDialogInput = "";
-    };
-
-    const handleSupportDialogCancel = () => {
-        supportWarningOpen.value = false;
-        supportDialogCallback = null;
-        state.supportDialogInput = "";
     };
 
     const handleCommandKeyDown = (event) => {
@@ -727,11 +637,6 @@ export function useCli() {
             pastePollInterval = null;
         }
 
-        if (supportPollInterval) {
-            clearInterval(supportPollInterval);
-            supportPollInterval = null;
-        }
-
         if (outputFlushRaf) {
             cancelAnimationFrame(outputFlushRaf);
             outputFlushRaf = null;
@@ -781,10 +686,6 @@ export function useCli() {
         // Keeping for reference if needed
     };
 
-    const isSupportRequestAvailable = () => {
-        return ispConnected();
-    };
-
     return {
         state,
         history,
@@ -793,23 +694,17 @@ export function useCli() {
         cliWindowRef,
         commandInputRef,
         snippetPreviewOpen,
-        supportWarningOpen,
         initialize,
         cleanup,
         clearHistory,
         saveFile,
         loadFile,
         copyToClipboard,
-        submitSupportRequest,
         handleCommandKeyDown,
         handleCommandKeyPress,
         handleCommandKeyUp,
-        handleSupportDialogSubmit,
-        handleSupportDialogCancel,
-        showSupportWarningDialog,
         read,
         sendLine,
-        isSupportRequestAvailable,
         adaptPhones,
     };
 }

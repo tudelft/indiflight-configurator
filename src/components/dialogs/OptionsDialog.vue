@@ -12,9 +12,6 @@
                     <SettingRow :label="$t('meteredConnection')">
                         <USwitch v-model="settings.meteredConnection" size="sm" />
                     </SettingRow>
-                    <SettingRow :label="$t('analyticsOptOut')">
-                        <USwitch v-model="settings.analyticsOptOut" size="sm" />
-                    </SettingRow>
                     <SettingRow :label="$t('cliAutoComplete')">
                         <USwitch v-model="settings.cliAutoComplete" size="sm" />
                     </SettingRow>
@@ -134,12 +131,6 @@
                         <USwitch v-model="settings.automaticDevOptions" size="sm" />
                     </SettingRow>
                 </UiBox>
-
-                <UiBox :title="$t('warningSettings')">
-                    <SettingRow :label="$t('presetsWarningBackup')">
-                        <USwitch v-model="settings.showPresetsWarningBackup" size="sm" />
-                    </SettingRow>
-                </UiBox>
             </div>
         </template>
     </UModal>
@@ -154,7 +145,6 @@ import { i18n } from "../../js/localization";
 import DeviceHandler from "../../js/device_handler";
 import CliAutoComplete from "../../js/CliAutoComplete";
 import DarkTheme, { setDarkTheme } from "../../js/DarkTheme";
-import { checkSetupAnalytics } from "../../js/Analytics";
 import NotificationManager from "../../js/utils/notifications";
 import { ispConnected } from "../../js/utils/connection";
 import { DEFAULT_DEVELOPMENT_OPTIONS, resetDevelopmentOptions } from "../../js/utils/developmentOptions";
@@ -177,7 +167,6 @@ const open = computed({
 const settings = reactive({
     rememberLastTab: !!getConfig("rememberLastTab").rememberLastTab,
     meteredConnection: !!getConfig("meteredConnection").meteredConnection,
-    analyticsOptOut: !!getConfig("analyticsOptOut").analyticsOptOut,
     cliAutoComplete: CliAutoComplete.configEnabled,
     showManualMode: !!getConfig("showManualMode").showManualMode,
     showVirtualMode: !!getConfig("showVirtualMode").showVirtualMode,
@@ -191,7 +180,6 @@ const settings = reactive({
     userLanguage: i18n.selectedLanguage,
     showAllSerialDevices: !!getConfig("showAllSerialDevices").showAllSerialDevices,
     cliOnlyMode: !!getConfig("cliOnlyMode", false).cliOnlyMode,
-    showPresetsWarningBackup: !!getConfig("showPresetsWarningBackup").showPresetsWarningBackup,
     automaticDevOptions: !!getConfig("automaticDevOptions", true).automaticDevOptions,
     uiScale: sanitizeUiScale(getConfig("uiScale", DEFAULT_UI_SCALE).uiScale),
 });
@@ -203,7 +191,6 @@ const availableLanguages = i18n.getLanguagesAvailables();
 const syncSettingsFromStorage = () => {
     settings.rememberLastTab = !!getConfig("rememberLastTab").rememberLastTab;
     settings.meteredConnection = !!getConfig("meteredConnection").meteredConnection;
-    settings.analyticsOptOut = !!getConfig("analyticsOptOut").analyticsOptOut;
     settings.showManualMode = !!getConfig("showManualMode").showManualMode;
     settings.showVirtualMode = !!getConfig("showVirtualMode").showVirtualMode;
     settings.expertMode = !!getConfig("expertMode").expertMode;
@@ -215,7 +202,6 @@ const syncSettingsFromStorage = () => {
     settings.backupOnFlash = getConfig("backupOnFlash", 1).backupOnFlash ?? 1;
     settings.showAllSerialDevices = !!getConfig("showAllSerialDevices").showAllSerialDevices;
     settings.cliOnlyMode = !!getConfig("cliOnlyMode", false).cliOnlyMode;
-    settings.showPresetsWarningBackup = !!getConfig("showPresetsWarningBackup").showPresetsWarningBackup;
     settings.automaticDevOptions = !!getConfig("automaticDevOptions", true).automaticDevOptions;
     settings.uiScale = sanitizeUiScale(getConfig("uiScale", DEFAULT_UI_SCALE).uiScale);
 };
@@ -236,16 +222,6 @@ watch(
     (value) => {
         setConfig({ meteredConnection: value });
         ispConnected();
-    },
-);
-
-watch(
-    () => settings.analyticsOptOut,
-    (value) => {
-        setConfig({ analyticsOptOut: value });
-        checkSetupAnalytics((analyticsService) => {
-            analyticsService.setOptOut(value);
-        });
     },
 );
 
@@ -341,11 +317,6 @@ watch(
 watch(
     () => settings.cliOnlyMode,
     (value) => setConfig({ cliOnlyMode: value }),
-);
-
-watch(
-    () => settings.showPresetsWarningBackup,
-    (value) => setConfig({ showPresetsWarningBackup: value }),
 );
 
 watch(

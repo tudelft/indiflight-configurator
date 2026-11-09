@@ -3,7 +3,6 @@ import CONFIGURATOR from "./data_storage.js";
 import { i18n } from "./localization.js";
 import { gui_log } from "./gui_log.js";
 import { set as setConfig } from "./ConfigStorage.js";
-import { checkSetupAnalytics } from "./Analytics.js";
 import { mountVueTab, vueTabState } from "./vue_tab_mounter.js";
 import { sidebarItems } from "../components/sidebar/sidebar_items.js";
 
@@ -58,8 +57,7 @@ export function switchTab(tabKey, options = {}) {
         return false;
     }
 
-    const isLoginSectionTab = mode === "loggedin";
-    if (!GUI.allowedTabs.includes(tabKey) && !isLoginSectionTab) {
+    if (!GUI.allowedTabs.includes(tabKey)) {
         handleDisallowedTab(tabKey, label);
         return false;
     }
@@ -70,10 +68,6 @@ export function switchTab(tabKey, options = {}) {
 
     GUI.tab_switch_in_progress = true;
     GUI.tab_switch_cleanup(function () {
-        checkSetupAnalytics(function (analyticsService) {
-            analyticsService.sendAppView(tabKey);
-        });
-
         const contentReady = () => {
             GUI.tab_switch_in_progress = false;
         };

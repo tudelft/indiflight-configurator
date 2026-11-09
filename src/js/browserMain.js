@@ -1,3 +1,4 @@
+import "./icons";
 import "../../libraries/flightindicators.css";
 
 import "../css/theme.css";

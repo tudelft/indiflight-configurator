@@ -1,7 +1,6 @@
-import { reactive, ref, computed, toRaw } from "vue";
+import { reactive, ref, computed } from "vue";
 import djv from "djv";
 import { i18n } from "../js/localization";
-import { tracking } from "../js/Analytics";
 import { mspHelper } from "../js/msp/MSPHelper";
 import FC from "../js/fc";
 import MSP from "../js/msp";
@@ -386,8 +385,7 @@ export function useVtx() {
 
         await saveToEeprom();
 
-        // Only after a successful persist: record analytics and clear the verify-table warning.
-        tracking.sendSaveAndChangeEvents(tracking.EVENT_CATEGORIES.FLIGHT_CONTROLLER, toRaw(analyticsChanges), "vtx");
+        // Only after a successful persist: clear the verify-table warning.
         savePending.value = false;
     }
 

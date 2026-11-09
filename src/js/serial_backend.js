@@ -17,16 +17,12 @@ import { gui_log } from "./gui_log";
 import { updateTabList } from "./utils/updateTabList";
 import { applyExpertMode } from "./utils/applyExpertMode";
 import { get as getConfig } from "./ConfigStorage";
-import { tracking } from "./Analytics";
 import semver from "semver";
-import CryptoES from "crypto-es";
-import BuildApi from "./BuildApi";
 
 import { serial } from "./serial.js";
 import { isTauriIOS } from "./utils/checkCompatibility.js";
 import { getConnectionState, State as ConnPhase } from "./connection_state.js";
 import { EventBus } from "../components/eventBus";
-import { ispConnected } from "./utils/connection";
 import { unmountVueTab } from "./vue_tab_mounter";
 import { switchTab } from "./tab_switch";
 import { useConnectionStore } from "../stores/connection";
@@ -236,22 +232,6 @@ export function initializeSerialBackend() {
         stopRebootReconnect();
         closeRebootDialog();
         serial.forceClose();
-    });
-}
-
-async function sendConfigTracking() {
-    tracking.sendEvent(tracking.EVENT_CATEGORIES.FLIGHT_CONTROLLER, "Loaded", {
-        boardIdentifier: FC.CONFIG.boardIdentifier,
-        targetName: FC.CONFIG.targetName,
-        boardName: FC.CONFIG.boardName,
-        hardware: FC.CONFIG.hardwareName,
-        manufacturerId: FC.CONFIG.manufacturerId,
-        apiVersion: FC.CONFIG.apiVersion,
-        flightControllerVersion: FC.CONFIG.flightControllerVersion,
-        flightControllerIdentifier: FC.CONFIG.flightControllerIdentifier,
-        mcu: FC.CONFIG.targetName,
-        deviceIdentifier: CryptoES.SHA1(FC.CONFIG.deviceIdentifier).toString(),
-        buildKey: FC.CONFIG.buildKey,
     });
 }
 
@@ -910,7 +890,7 @@ function onOpen(openInfo) {
                     }
                 });
             } else {
-                showVersionMismatchAndCli(i18n.getMessage("firmwareUpgradeRequired"));
+                showVersionMismatchAndCli(i18n.getMessage("indiflightFirmwareUpgradeRequired"));
             }
         });
     } else {
@@ -1051,20 +1031,6 @@ async function processBuildConfiguration() {
             console.error("Failed to request build key:", error);
         }
         gui_log(i18n.getMessage("buildKey", FC.CONFIG.buildKey));
-
-        // firmware 1_45 or higher is required to support cloud build options
-        // firmware 1_46 or higher retrieves build options from the flight controller
-        if (FC.CONFIG.buildKey.length === 32 && ispConnected() && semver.lt(FC.CONFIG.apiVersion, API_VERSION_1_46)) {
-            const buildApi = new BuildApi();
-            try {
-                const options = await buildApi.requestBuildOptions(FC.CONFIG.buildKey);
-                if (options) {
-                    FC.CONFIG.buildOptions = options?.request?.options ?? [];
-                }
-            } catch (error) {
-                console.error("Failed to request build options: ", error);
-            }
-        }
     }
 
     await processCraftName();
@@ -1091,7 +1057,6 @@ async function processUid() {
     gui_log(i18n.getMessage("uniqueDeviceIdReceived", FC.CONFIG.deviceIdentifier));
 
     await processBuildConfiguration();
-    await sendConfigTracking();
 }
 
 async function processCraftName() {

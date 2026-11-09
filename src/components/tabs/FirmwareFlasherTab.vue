@@ -3,34 +3,10 @@
         <div class="content_wrapper">
             <div class="tab_title">{{ $t("tabFirmwareFlasher") }}</div>
             <WikiButton docUrl="firmware_flasher" />
-            <SponsorTile ref="sponsorTile" sponsor-type="flash" />
-
-            <!-- Sub-tab navigation -->
-            <SubtabNav :items="subtabItems" v-model="activeFlasherStep" />
 
             <!-- Tab content -->
             <div class="flasher-tab-area">
-                <FlasherBoardBuildTab
-                    v-if="activeFlasherStep === 'board-build'"
-                    :state="state"
-                    :board-selection="boardSelection"
-                    :on-build-type-change="onBuildTypeChange"
-                    :on-board-change="onBoardChange"
-                    :on-detect-board="handleDetectBoard"
-                    :on-firmware-version-change="onFirmwareVersionChange"
-                    :on-expert-mode-change="handleExpertModeChange"
-                    :on-show-development-releases-change="handleShowDevelopmentReleasesChange"
-                    :on-radio-protocol-change="onRadioProtocolChange"
-                    :on-telemetry-protocol-change="onTelemetryProtocolChange"
-                    :on-osd-protocol-change="onOsdProtocolChange"
-                    :on-motor-protocol-change="onMotorProtocolChange"
-                    :on-options-change="onOptionsChange"
-                    :remove-selected-build-option="removeSelectedBuildOption"
-                    :on-commit-change="onCommitChange"
-                    :on-commit-create="onCommitCreate"
-                />
                 <FlasherFlashTab
-                    v-if="activeFlasherStep === 'flash'"
                     :state="state"
                     :cloud-build="cloudBuild"
                     :on-save-firmware="saveFirmware"
@@ -63,22 +39,14 @@
                     />
                 </UDropdownMenu>
             </UFieldGroup>
-            <UFieldGroup size="sm" orientation="horizontal" class="flex!">
-                <UButton :disabled="state.loadRemoteButtonDisabled" @click="handleLoadRemoteFile">{{
-                    $t("firmwareFlasherButtonLoadOnline")
-                }}</UButton>
-                <UDropdownMenu
-                    v-slot="{ open }"
-                    :items="loadFirmwareMenuItems"
-                    :content="{ align: 'end', side: 'top' }"
-                >
-                    <UButton
-                        :icon="open ? 'i-lucide-chevron-up' : 'i-lucide-chevron-down'"
-                        :aria-label="$t('firmwareFlasherLoadFirmwareOptions')"
-                        square
-                    />
-                </UDropdownMenu>
-            </UFieldGroup>
+            <UButton
+                size="sm"
+                icon="i-lucide-hard-drive-download"
+                :disabled="state.loadFileButtonDisabled"
+                @click="handleLoadFile"
+            >
+                {{ $t("firmwareFlasherButtonLoadLocal") }}
+            </UButton>
         </div>
 
         <UModal v-model:open="unstableFirmwareOpen" :title="$t('warningTitle')" :close="false" :dismissible="false">
@@ -135,7 +103,6 @@ import { useFirmwareFlashing, cleanUnifiedConfigFile } from "../../composables/u
 import { get as getConfig, set as setConfig } from "../../js/ConfigStorage";
 import { get as getStorage, set as setStorage } from "../../js/SessionStorage";
 import BuildApi from "../../js/BuildApi";
-import { tracking } from "../../js/Analytics";
 import DeviceHandler from "../../js/device_handler";
 import { gui_log } from "../../js/gui_log";
 import semver from "semver";
@@ -146,24 +113,18 @@ import { EventBus } from "../eventBus";
 import STM32 from "../../js/protocols/webstm32";
 import { ispConnected } from "../../js/utils/connection.js";
 import FC from "../../js/fc";
-import SponsorTile from "../sponsor/SponsorTile.vue";
-import FlasherBoardBuildTab from "./firmware-flasher/FlasherBoardBuildTab.vue";
 import FlasherFlashTab from "./firmware-flasher/FlasherFlashTab.vue";
-import SubtabNav from "../elements/SubtabNav.vue";
 import { applyExpertMode } from "../../js/utils/applyExpertMode";
 
 // Module-scope ref so the active sub-tab persists across component remounts (tab switches).
-const activeFlasherStep = ref("board-build");
+const activeFlasherStep = ref("flash");
 
 export default defineComponent({
     name: "FirmwareFlasherTab",
     components: {
         BaseTab,
         WikiButton,
-        SponsorTile,
-        FlasherBoardBuildTab,
         FlasherFlashTab,
-        SubtabNav,
     },
     setup() {
         // Get $t from Vue i18n if available, otherwise use fallback
@@ -254,9 +215,6 @@ export default defineComponent({
             restoreCompleted: false,
         });
 
-        // Sponsor component ref
-        const sponsorTile = ref(null);
-
         // Verify board dialog refs
         const verifyBoardOpen = ref(false);
         const verifyBoardContentHtml = ref("");
@@ -298,18 +256,10 @@ export default defineComponent({
 
         const enableLoadRemoteFileButton = (enabled) => {
             state.loadRemoteButtonDisabled = !enabled;
-            // Resume sponsor when load buttons are re-enabled
-            if (enabled) {
-                sponsorTile.value?.resume();
-            }
         };
 
         const enableLoadFileButton = (enabled) => {
             state.loadFileButtonDisabled = !enabled;
-            // Resume sponsor when load buttons are re-enabled
-            if (enabled) {
-                sponsorTile.value?.resume();
-            }
         };
 
         const enableDfuExitButton = (enabled) => {
@@ -398,8 +348,6 @@ export default defineComponent({
             } else {
                 flashingMessage($t("firmwareFlasherFirmwareNotLoaded"), FLASH_MESSAGE_TYPES.NEUTRAL);
             }
-
-            sponsorTile.value?.resume();
         };
 
         const preservePreFlashingState = () => {
@@ -469,14 +417,6 @@ export default defineComponent({
             }
             enableFlashButton(true);
             activeFlasherStep.value = "flash";
-
-            tracking.sendEvent(tracking.EVENT_CATEGORIES.FLASHING, "FirmwareLoaded", {
-                firmwareSize: bytes,
-                firmwareName: filename,
-                firmwareSource: state.localFirmwareLoaded ? "file" : "http",
-                selectedTarget: state.targetDetail?.target,
-                selectedRelease: state.targetDetail?.release,
-            });
         };
 
         const cleanUnifiedConfigFileWrapper = (input) => {
@@ -999,7 +939,7 @@ export default defineComponent({
             }
 
             // Reset state on tab initialization
-            activeFlasherStep.value = "board-build";
+            activeFlasherStep.value = "flash";
             boardSelection.resetBoardSelection();
             cloudBuild.resetCloudBuildState();
             firmwareFlashing.clearFirmwareState();
@@ -1110,9 +1050,6 @@ export default defineComponent({
         const startFlashing = async () => {
             const selectedBoardTarget = boardSelection.state.selectedBoard;
 
-            // Pause sponsor during flashing
-            sponsorTile.value?.pause();
-
             await firmwareFlashing.startFlashing({
                 config: state.config,
                 clearBoardConfig,
@@ -1121,7 +1058,6 @@ export default defineComponent({
                 noRebootSequence: state.noRebootSequence,
                 flashManualBaud: state.flashManualBaud,
                 flashManualBaudRate: state.flashManualBaudRate,
-                filename: state.filename,
                 resetFlashingState,
                 // Board verification options
                 selectedBoard: selectedBoardTarget,
@@ -1508,7 +1444,6 @@ export default defineComponent({
             const options = {
                 connectLock: GUI.connect_lock,
                 firmwareType: state.firmware_type,
-                filename: state.filename,
                 flashOnConnect: state.flashOnConnect,
                 portAvailable: DeviceHandler.portAvailable,
                 dfuAvailable: DeviceHandler.dfuAvailable,
@@ -1794,23 +1729,6 @@ export default defineComponent({
             }
         };
 
-        const loadFirmwareMenuItems = computed(() => [
-            [
-                {
-                    label: $t("firmwareFlasherButtonLoadOnline"),
-                    icon: "i-lucide-cloud-download",
-                    disabled: state.loadRemoteButtonDisabled,
-                    onSelect: handleLoadRemoteFile,
-                },
-                {
-                    label: $t("firmwareFlasherButtonLoadLocal"),
-                    icon: "i-lucide-hard-drive-download",
-                    disabled: state.loadFileButtonDisabled,
-                    onSelect: handleLoadFile,
-                },
-            ],
-        ]);
-
         const flashActionMenuItems = computed(() => {
             const group = [
                 {
@@ -1851,24 +1769,16 @@ export default defineComponent({
             }
         });
 
-        const subtabItems = computed(() => [
-            { label: $t("firmwareFlasherSubTabBoardBuild"), value: "board-build", icon: "i-lucide-cpu" },
-            { label: $t("firmwareFlasherSubTabFlash"), value: "flash", icon: "i-lucide-zap" },
-        ]);
-
         // Return all public methods and state
         return {
             state,
             flashRingColor,
             activeFlasherStep,
-            subtabItems,
             flashActionMenuItems,
-            loadFirmwareMenuItems,
             cloudBuild,
             boardSelection,
             FLASH_MESSAGE_TYPES,
             // Template refs
-            sponsorTile,
             verifyBoardOpen,
             verifyBoardContentHtml,
             unstableFirmwareOpen,

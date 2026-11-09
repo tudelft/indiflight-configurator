@@ -1,7 +1,6 @@
 import { reactive, ref, computed, watch } from "vue";
 import semver from "semver";
 import { i18n } from "../js/localization";
-import { tracking } from "../js/Analytics";
 import { mspHelper } from "../js/msp/MSPHelper";
 import { API_VERSION_1_44, API_VERSION_1_48 } from "../js/data_storage";
 import FC from "../js/fc";
@@ -537,8 +536,7 @@ export function usePower() {
 
         await saveToEeprom();
 
-        // Only after a successful persist: record analytics and refresh the dirty baseline.
-        tracking.sendSaveAndChangeEvents(tracking.EVENT_CATEGORIES.FLIGHT_CONTROLLER, analyticsChanges, "power");
+        // Only after a successful persist: refresh the dirty baseline.
         for (const key in analyticsChanges) {
             delete analyticsChanges[key];
         }

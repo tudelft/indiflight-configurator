@@ -177,14 +177,6 @@ vi.mock("../../src/js/data_storage", () => ({
     API_VERSION_1_47: "1.47.0",
 }));
 
-vi.mock("../../src/js/Analytics", () => ({
-    __esModule: true,
-    tracking: {
-        sendEvent: vi.fn(),
-        EVENT_CATEGORIES: { FLIGHT_CONTROLLER: "fc" },
-    },
-}));
-
 vi.mock("../../src/js/localization", () => ({
     __esModule: true,
     i18n: { getMessage: (k) => k },

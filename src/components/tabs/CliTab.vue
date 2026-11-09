@@ -61,34 +61,6 @@
             </template>
         </UModal>
 
-        <!-- Support warning dialog -->
-        <UModal
-            v-model:open="supportWarningOpen"
-            :title="$t('supportWarningDialogTitle')"
-            :close="false"
-            :dismissible="false"
-            :ui="{ content: 'w-[400px]' }"
-        >
-            <template #body>
-                <div class="mb-3" v-html="$t('supportWarningDialogText')"></div>
-                <textarea
-                    v-model="cli.state.supportDialogInput"
-                    name="supportWarningDialogInput"
-                    :placeholder="$t('supportWarningDialogInputPlaceHolder')"
-                    :aria-label="$t('supportWarningDialogInputPlaceHolder')"
-                    rows="3"
-                    cols="0"
-                    class="w-full mt-2 leading-5 p-1 border border-(--ui-border) resize-none bg-(--ui-bg-muted) text-(--ui-text)"
-                ></textarea>
-            </template>
-            <template #footer>
-                <div class="flex justify-end gap-2 w-full">
-                    <UButton :label="$t('cancel')" variant="outline" @click="handleSupportCancel" />
-                    <UButton :label="$t('submit')" @click="handleSupportSubmit" />
-                </div>
-            </template>
-        </UModal>
-
         <!-- Bottom toolbar -->
         <div class="content_toolbar xs-compressed toolbar_fixed_bottom flex items-center gap-2">
             <UButton :label="$t('cliSaveToFileBtn')" @click="cli.saveFile" variant="soft" />
@@ -99,11 +71,6 @@
                 :style="{ minWidth: cli.state.copyButtonWidth }"
                 @click="cli.copyToClipboard"
                 variant="soft"
-            />
-            <UButton
-                v-if="cli.isSupportRequestAvailable()"
-                :label="$t('cliSupportRequestBtn')"
-                @click="cli.submitSupportRequest"
             />
         </div>
     </BaseTab>
@@ -219,14 +186,6 @@ export default defineComponent({
             }
         };
 
-        const handleSupportSubmit = () => {
-            cli.handleSupportDialogSubmit();
-        };
-
-        const handleSupportCancel = () => {
-            cli.handleSupportDialogCancel();
-        };
-
         const onInputChange = () => {
             if (CliAutoComplete.isEnabled() && !CliAutoComplete.isBuilding()) {
                 cli.autocomplete.update(cli.state.commandInput);
@@ -248,8 +207,6 @@ export default defineComponent({
             onTabCleanup,
             handleLoadFile,
             handleSnippetConfirm,
-            handleSupportSubmit,
-            handleSupportCancel,
             onInputChange,
             onAutocompleteSelect,
             // Expose refs directly so Vue can assign template refs
@@ -257,7 +214,6 @@ export default defineComponent({
             cliWindowRef: cli.cliWindowRef,
             commandInputRef: cli.commandInputRef,
             snippetPreviewOpen: cli.snippetPreviewOpen,
-            supportWarningOpen: cli.supportWarningOpen,
         };
     },
 });

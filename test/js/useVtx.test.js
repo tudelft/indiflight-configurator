@@ -22,14 +22,6 @@ vi.mock("../../src/js/gui_log", () => ({
     gui_log: vi.fn(),
 }));
 
-vi.mock("../../src/js/Analytics", () => ({
-    __esModule: true,
-    tracking: {
-        sendSaveAndChangeEvents: vi.fn(),
-        EVENT_CATEGORIES: { FLIGHT_CONTROLLER: "fc" },
-    },
-}));
-
 // Persist is EEPROM-only; stub useReboot so the save path doesn't need Pinia/serial. The spy
 // stands in for the shared saveToEeprom() (which the tab now uses instead of writeConfiguration).
 const { saveToEepromMock } = vi.hoisted(() => ({ saveToEepromMock: vi.fn(async () => {}) }));
@@ -39,7 +31,6 @@ vi.mock("../../src/composables/useReboot", () => ({
 }));
 
 import { useVtx } from "../../src/composables/useVtx";
-import { tracking } from "../../src/js/Analytics";
 
 describe("useVtx", () => {
     let scope;
@@ -48,7 +39,6 @@ describe("useVtx", () => {
     beforeEach(async () => {
         FC.resetState();
         saveToEepromMock.mockClear();
-        tracking.sendSaveAndChangeEvents.mockClear();
 
         // Error-aware MSP requests: the save/load chains now use MSP.promise everywhere.
         vi.spyOn(MSP, "promise").mockResolvedValue(undefined);
@@ -88,25 +78,22 @@ describe("useVtx", () => {
         expect(saveToEepromMock).toHaveBeenCalledTimes(1);
     });
 
-    it("records analytics and clears the pending-verify flag only after a successful persist", async () => {
+    it("clears the pending-verify flag only after a successful persist", async () => {
         vtx.savePending.value = true;
 
         await vtx.saveVtx();
 
         expect(saveToEepromMock).toHaveBeenCalledTimes(1);
-        expect(tracking.sendSaveAndChangeEvents).toHaveBeenCalledTimes(1);
-        expect(tracking.sendSaveAndChangeEvents).toHaveBeenCalledWith("fc", expect.any(Object), "vtx");
         expect(vtx.savePending.value).toBe(false);
     });
 
-    it("does not run analytics or clear pending-verify when an MSP write rejects", async () => {
+    it("does not clear pending-verify when an MSP write rejects", async () => {
         vtx.savePending.value = true;
         MSP.promise.mockRejectedValueOnce(new Error("boom"));
 
         await expect(vtx.saveVtx()).rejects.toThrow("boom");
 
         expect(saveToEepromMock).not.toHaveBeenCalled();
-        expect(tracking.sendSaveAndChangeEvents).not.toHaveBeenCalled();
         expect(vtx.savePending.value).toBe(true);
     });
 });

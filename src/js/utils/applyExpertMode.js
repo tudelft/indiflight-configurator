@@ -1,5 +1,4 @@
 import { set as setConfig } from "../ConfigStorage";
-import { checkSetupAnalytics } from "../Analytics";
 import { updateTabList } from "./updateTabList";
 import FC from "../fc";
 import GUI, { TABS } from "../gui";
@@ -9,12 +8,6 @@ export function applyExpertMode(checked, { persist = true } = {}) {
     if (globalThis.vm) {
         globalThis.vm.expertMode = checked;
     }
-
-    checkSetupAnalytics(function (analyticsService) {
-        analyticsService.sendEvent(analyticsService.EVENT_CATEGORIES.APPLICATION, "ExpertMode", {
-            status: checked ? "On" : "Off",
-        });
-    });
 
     updateTabList(FC.FEATURE_CONFIG?.features);
 

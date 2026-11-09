@@ -547,7 +547,6 @@ import GUI from "@/js/gui";
 import MSP from "@/js/msp";
 import { reinitializeConnection } from "@/js/serial_backend";
 import { gui_log } from "@/js/gui_log";
-import { tracking } from "@/js/Analytics";
 import semver from "semver";
 import { API_VERSION_1_45 } from "@/js/data_storage";
 
@@ -1327,12 +1326,7 @@ const saveConfig = () =>
             // Send all OSD config to FC and write EEPROM.
             await osdStore.saveAllConfig();
 
-            // Track analytics
-            const changes = analyticsChanges.value;
-            if (Object.keys(changes).length > 0) {
-                tracking.sendSaveAndChangeEvents(tracking.EVENT_CATEGORIES.FLIGHT_CONTROLLER, changes, "osd");
-                analyticsChanges.value = {};
-            }
+            analyticsChanges.value = {};
 
             // Show success
             gui_log(i18n.getMessage("osdSettingsSaved"));
