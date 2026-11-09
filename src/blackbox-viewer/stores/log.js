@@ -5,6 +5,7 @@ import {
     FIRMWARE_TYPE_CLEANFLIGHT,
     FIRMWARE_TYPE_BETAFLIGHT,
     FIRMWARE_TYPE_INAV,
+    FIRMWARE_TYPE_INDIFLIGHT,
 } from "../flightlog_fielddefs.js";
 
 const FIRMWARE_CLASS_MAP = {
@@ -12,9 +13,10 @@ const FIRMWARE_CLASS_MAP = {
     [FIRMWARE_TYPE_CLEANFLIGHT]: "isCF",
     [FIRMWARE_TYPE_BETAFLIGHT]: "isBF",
     [FIRMWARE_TYPE_INAV]: "isINAV",
+    [FIRMWARE_TYPE_INDIFLIGHT]: "isBF",
 };
 
-export const FIRMWARE_CLASSES = Object.values(FIRMWARE_CLASS_MAP);
+export const FIRMWARE_CLASSES = [...new Set(Object.values(FIRMWARE_CLASS_MAP))];
 
 export const useLogStore = defineStore("log", () => {
     const flightLog = ref(null);

@@ -7,6 +7,8 @@ import {
     FIRMWARE_TYPE_CLEANFLIGHT,
     FIRMWARE_TYPE_BETAFLIGHT,
     FIRMWARE_TYPE_INAV,
+    FIRMWARE_TYPE_INDIFLIGHT,
+    isBetaflightFamily,
 } from "./flightlog_fielddefs";
 import { ArrayDataStream } from "./datastream";
 import "./decoders";
@@ -42,6 +44,7 @@ import {
  * [API_VERSION_1_44, API_VERSION_1_48]. Non-Betaflight firmware
  * (Cleanflight / iNav / Baseflight / unknown) and anything below the floor
  * resolve to API_VERSION_1_44, which yields the base definition tables.
+ * Indiflight carries its Betaflight base version 4.4.0 here and resolves to 1.45.
  *
  * Known Betaflight version <-> API pairs:
  *   - 4.4.x          -> 1.45
@@ -55,7 +58,7 @@ import {
  * @returns {string} An API version string in [1.44.0, 1.48.0].
  */
 function firmwareToApiVersion(firmwareType, firmwareVersion) {
-    if (firmwareType !== FIRMWARE_TYPE_BETAFLIGHT) {
+    if (!isBetaflightFamily(firmwareType)) {
         return API_VERSION_1_44;
     }
 
@@ -109,7 +112,8 @@ function translateLegacyFieldNames(names) {
 
 export function FlightLogParser(logData) {
     //Private constants:
-    const FLIGHT_LOG_MAX_FRAME_LENGTH = 256,
+    // Indiflight logs far more fields per frame than Betaflight
+    const FLIGHT_LOG_MAX_FRAME_LENGTH = 2048,
         //Assume that even in the most woeful logging situation, we won't miss 10 seconds of frames
         MAXIMUM_TIME_JUMP_BETWEEN_FRAMES = 10 * 1000000,
         //Likewise for iteration count
@@ -806,8 +810,7 @@ export function FlightLogParser(logData) {
      * Check if firmware meets the 3.0.1/2.0.0 version threshold for filter fields
      */
     const isModernFilterFirmware = () =>
-        (this.sysConfig.firmwareType === FIRMWARE_TYPE_BETAFLIGHT &&
-            semver.gte(this.sysConfig.firmwareVersion, "3.0.1")) ||
+        (isBetaflightFamily(this.sysConfig.firmwareType) && semver.gte(this.sysConfig.firmwareVersion, "3.0.1")) ||
         (this.sysConfig.firmwareType === FIRMWARE_TYPE_CLEANFLIGHT &&
             semver.gte(this.sysConfig.firmwareVersion, "2.0.0"));
 
@@ -831,6 +834,17 @@ export function FlightLogParser(logData) {
             this.sysConfig.firmware = `${Number.parseInt(fwMatches[2], 10)}.${Number.parseInt(fwMatches[3], 10)}`;
             this.sysConfig.firmwarePatch = fwMatches[4] ? Number.parseInt(fwMatches[4], 10) : "0";
             this.sysConfig.firmwareVersion = `${this.sysConfig.firmware}.${this.sysConfig.firmwarePatch}`;
+            return;
+        }
+
+        // Indiflight forked Betaflight 4.4 but counts its own versions from 5.0, so gate features on the base version.
+        // The real version stays readable in the "Firmware revision" header.
+        const indiflightMatches = /Indiflight\s+\d+\.\d+/i.exec(fieldValue);
+        if (indiflightMatches != null) {
+            this.sysConfig.firmwareType = FIRMWARE_TYPE_INDIFLIGHT;
+            this.sysConfig.firmware = "4.4";
+            this.sysConfig.firmwarePatch = "0";
+            this.sysConfig.firmwareVersion = "4.4.0";
             return;
         }
 
@@ -922,8 +936,7 @@ export function FlightLogParser(logData) {
     };
     const accelLimitHandler = (fn, fv) => {
         const isBfModern =
-            this.sysConfig.firmwareType === FIRMWARE_TYPE_BETAFLIGHT &&
-            semver.gte(this.sysConfig.firmwareVersion, "3.1.0");
+            isBetaflightFamily(this.sysConfig.firmwareType) && semver.gte(this.sysConfig.firmwareVersion, "3.1.0");
         const isCfModern =
             this.sysConfig.firmwareType === FIRMWARE_TYPE_CLEANFLIGHT &&
             semver.gte(this.sysConfig.firmwareVersion, "2.0.0");
@@ -962,7 +975,7 @@ export function FlightLogParser(logData) {
         if (
             this.sysConfig.firmwareType === FIRMWARE_TYPE_INAV ||
             this.sysConfig.firmwareType === FIRMWARE_TYPE_CLEANFLIGHT ||
-            this.sysConfig.firmwareType === FIRMWARE_TYPE_BETAFLIGHT
+            isBetaflightFamily(this.sysConfig.firmwareType)
         ) {
             this.sysConfig.gyroScale *= (Math.PI / 180) * 0.000001;
         }
@@ -1079,7 +1092,8 @@ export function FlightLogParser(logData) {
 
         const lineStart = stream.pos;
 
-        for (; stream.pos < lineStart + 1024 && stream.pos < stream.end; stream.pos++) {
+        // Indiflight's "Field I name" header lines exceed 1024 characters
+        for (; stream.pos < lineStart + 4096 && stream.pos < stream.end; stream.pos++) {
             if (separatorPos === false && stream.data[stream.pos] === COLON) {
                 separatorPos = stream.pos;
             }
@@ -1899,7 +1913,9 @@ export function FlightLogParser(logData) {
                 if (!this.stats.frame[lastFrameType.marker]) {
                     this.stats.frame[lastFrameType.marker] = {
                         bytes: 0,
-                        sizeCount: new Int32Array(256) /* int32 arrays are zero-filled, handy! */,
+                        sizeCount: new Int32Array(
+                            FLIGHT_LOG_MAX_FRAME_LENGTH + 1,
+                        ) /* int32 arrays are zero-filled, handy! */,
                         validCount: 0,
                         corruptCount: 0,
                         desyncCount: 0,

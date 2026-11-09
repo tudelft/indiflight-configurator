@@ -10,7 +10,7 @@ import {
     AXIS,
     FAST_PROTOCOL,
     SUPER_EXPO_YAW,
-    FIRMWARE_TYPE_BETAFLIGHT,
+    isBetaflightFamily,
     FIRMWARE_TYPE_CLEANFLIGHT,
 } from "./flightlog_fielddefs";
 import { IMU } from "./imu";
@@ -741,7 +741,7 @@ export function FlightLog(logData) {
         currentFlightMode,
         sysConfig,
     ) => {
-        if (sysConfig.firmwareType === FIRMWARE_TYPE_BETAFLIGHT && semver.gte(sysConfig.firmwareVersion, "4.0.0")) {
+        if (isBetaflightFamily(sysConfig.firmwareType) && semver.gte(sysConfig.firmwareVersion, "4.0.0")) {
             for (let axis = 0; axis <= AXIS.YAW; axis++) {
                 destFrame[fieldIndex++] = srcFrame[setpoint[axis]];
             }
@@ -1192,7 +1192,7 @@ export function FlightLog(logData) {
                         continue;
                     }
 
-                    for (centerFrameIndex = 0; centerFrameIndex < sourceChunks[centerChunkIndex].frames.length; ) {
+                    for (centerFrameIndex = 0; centerFrameIndex < sourceChunks[centerChunkIndex].frames.length;) {
                         let //Current beginning & end of the smoothing window:
                             leftChunkIndex = centerChunkIndex,
                             leftFrameIndex = centerFrameIndex,
@@ -1646,12 +1646,12 @@ FlightLog.prototype.getPIDPercentage = function (value) {
 
 FlightLog.prototype.getReferenceVoltageMillivolts = function () {
     if (
-        this.getSysConfig().firmwareType === FIRMWARE_TYPE_BETAFLIGHT &&
+        isBetaflightFamily(this.getSysConfig().firmwareType) &&
         semver.gte(this.getSysConfig().firmwareVersion, "4.0.0")
     ) {
         return this.getSysConfig().vbatref * 10;
     } else if (
-        (this.getSysConfig().firmwareType === FIRMWARE_TYPE_BETAFLIGHT &&
+        (isBetaflightFamily(this.getSysConfig().firmwareType) &&
             semver.gte(this.getSysConfig().firmwareVersion, "3.1.0")) ||
         (this.getSysConfig().firmwareType === FIRMWARE_TYPE_CLEANFLIGHT &&
             semver.gte(this.getSysConfig().firmwareVersion, "2.0.0"))
@@ -1748,7 +1748,7 @@ FlightLog.prototype.isFieldDisabled = function () {
     const disabledFields = this.getSysConfig().fields_disabled_mask;
     const disabledFieldsFlags = {};
     if (
-        this.getSysConfig().firmwareType === FIRMWARE_TYPE_BETAFLIGHT &&
+        isBetaflightFamily(this.getSysConfig().firmwareType) &&
         firmwareGreaterOrEqual(this.getSysConfig(), "2025.12.0")
     ) {
         disabledFieldsFlags.PID = (disabledFields & (1 << 0)) !== 0;

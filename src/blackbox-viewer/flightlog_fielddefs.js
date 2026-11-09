@@ -16,6 +16,16 @@ export const FIRMWARE_TYPE_BASEFLIGHT = 1;
 export const FIRMWARE_TYPE_CLEANFLIGHT = 2;
 export const FIRMWARE_TYPE_BETAFLIGHT = 3;
 export const FIRMWARE_TYPE_INAV = 4;
+export const FIRMWARE_TYPE_INDIFLIGHT = 5;
+
+/**
+ * Indiflight is a Betaflight 4.4 fork: its logs follow Betaflight semantics everywhere except the flight mode flags.
+ * @param {number} firmwareType
+ * @returns {boolean}
+ */
+export function isBetaflightFamily(firmwareType) {
+    return firmwareType === FIRMWARE_TYPE_BETAFLIGHT || firmwareType === FIRMWARE_TYPE_INDIFLIGHT;
+}
 
 // Some constants used at different places
 export const MAX_MOTOR_NUMBER = 8;
@@ -141,6 +151,62 @@ export const FLIGHT_LOG_FLIGHT_MODE_NAME_POST_3_3 = makeReadOnly([
     "ACROTRAINER",
     "VTXCONTROLDISABLE",
     "LAUNCHCONTROL",
+]);
+
+// Bit order of boxId_e in Indiflight's src/main/fc/rc_modes.h
+export const FLIGHT_LOG_FLIGHT_MODE_NAME_INDIFLIGHT = makeReadOnly([
+    "ARM",
+    "ANGLE",
+    "HORIZON",
+    "MAG",
+    "HEADFREE",
+    "PASSTHRU",
+    "FAILSAFE",
+    "GPSRESCUE",
+    "WAYPOINTS",
+    "POSITION",
+    "CATAPULT",
+    "LEARNER",
+    "LEGACYPID",
+    "NNCTL",
+    "ANTIGRAVITY",
+    "HEADADJ",
+    "CAMSTAB",
+    "BEEPER",
+    "LEDLOW",
+    "CALIB",
+    "OSD",
+    "TELEMETRY",
+    "SERVO1",
+    "SERVO2",
+    "SERVO3",
+    "BLACKBOX",
+    "AIRMODE",
+    "3D",
+    "FPVANGLEMIX",
+    "BLACKBOXERASE",
+    "RESETHOME",
+    "CAMERA1",
+    "CAMERA2",
+    "CAMERA3",
+    "FLIPOVERAFTERCRASH",
+    "PREARM",
+    "THROWTOARM",
+    "BEEPGPSCOUNT",
+    "VTXPITMODE",
+    "PARALYZE",
+    "USER1",
+    "USER2",
+    "USER3",
+    "USER4",
+    "PIDAUDIO",
+    "ACROTRAINER",
+    "VTXCONTROLDISABLE",
+    "LAUNCHCONTROL",
+    "MSPOVERRIDE",
+    "STICKCOMMANDDISABLE",
+    "BEEPERMUTE",
+    "READY",
 ]);
 
 export const FLIGHT_LOG_FLIGHT_MODE_NAME_POST_4_5 = makeReadOnly([
@@ -374,7 +440,7 @@ export const SIMPLIFIED_PIDS_MODE = makeReadOnly(["OFF", "ON - RP", "ON - RPY"])
 export const THROTTLE_LIMIT_TYPE = makeReadOnly(["OFF", "SCALE", "CLIP"]);
 
 export function adjustFieldDefsList(firmwareType, firmwareVersion) {
-    if (firmwareType === FIRMWARE_TYPE_BETAFLIGHT && semver.gte(firmwareVersion, "3.3.0")) {
+    if (isBetaflightFamily(firmwareType) && semver.gte(firmwareVersion, "3.3.0")) {
         // Hardware names
         ACC_HARDWARE = ACC_HARDWARE_COMPLETE.slice(0);
         MAG_HARDWARE = MAG_HARDWARE_COMPLETE.slice(0);
@@ -395,7 +461,9 @@ export function adjustFieldDefsList(firmwareType, firmwareVersion) {
         MAG_HARDWARE = makeReadOnly(MAG_HARDWARE);
 
         // Flight mode names
-        if (semver.gte(firmwareVersion, "2025.12.0")) {
+        if (firmwareType === FIRMWARE_TYPE_INDIFLIGHT) {
+            FLIGHT_LOG_FLIGHT_MODE_NAME = FLIGHT_LOG_FLIGHT_MODE_NAME_INDIFLIGHT.slice(0);
+        } else if (semver.gte(firmwareVersion, "2025.12.0")) {
             FLIGHT_LOG_FLIGHT_MODE_NAME = FLIGHT_LOG_FLIGHT_MODE_NAME_POST_4_5.slice(0);
         } else {
             FLIGHT_LOG_FLIGHT_MODE_NAME = FLIGHT_LOG_FLIGHT_MODE_NAME_POST_3_3.slice(0);

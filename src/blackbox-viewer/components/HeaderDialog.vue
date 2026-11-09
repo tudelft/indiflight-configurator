@@ -222,8 +222,8 @@ import {
     FF_AVERAGING,
     SIMPLIFIED_PIDS_MODE,
     THROTTLE_LIMIT_TYPE,
-    FIRMWARE_TYPE_BETAFLIGHT,
     FIRMWARE_TYPE_INAV,
+    isBetaflightFamily,
 } from "../flightlog_fielddefs";
 import { getDebugModes } from "../../js/utils/debugModes";
 
@@ -249,7 +249,7 @@ const filteredSc = computed(() => {
 });
 const fwType = computed(() => sc.value.firmwareType);
 const fwVer = computed(() => sc.value.firmwareVersion || "0.0.0");
-const isBF = computed(() => fwType.value === FIRMWARE_TYPE_BETAFLIGHT);
+const isBF = computed(() => isBetaflightFamily(fwType.value));
 const isINAV = computed(() => fwType.value === FIRMWARE_TYPE_INAV);
 
 function gte(ver) {

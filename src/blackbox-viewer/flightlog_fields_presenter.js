@@ -5,7 +5,7 @@ import {
     FLIGHT_LOG_FLIGHT_STATE_NAME,
     FLIGHT_LOG_FAILSAFE_PHASE_NAME,
     FFT_CALC_STEPS,
-    FIRMWARE_TYPE_BETAFLIGHT,
+    isBetaflightFamily,
     FIRMWARE_TYPE_CLEANFLIGHT,
 } from "./flightlog_fielddefs";
 import { formatTime } from "./tools";
@@ -181,6 +181,57 @@ const FRIENDLY_FIELD_NAMES = {
     gpsTrajectoryTiltAngle: "GPS Traject. tilt angle",
 };
 
+const UNIT_FLOAT_TO_SIGNED16VB = (127 << 6) - 1; // Indiflight scale for values in [-1, 1]
+
+// Indiflight-only fields, keyed by field name without the array index; must match the scaling in Indiflight's blackbox.c
+const INDIFLIGHT_FIELD_FORMATS = {
+    quat: (v) => (v / UNIT_FLOAT_TO_SIGNED16VB).toFixed(3),
+    quatSp: (v) => (v / UNIT_FLOAT_TO_SIGNED16VB).toFixed(3),
+    ekf_quat: (v) => (v / UNIT_FLOAT_TO_SIGNED16VB).toFixed(3),
+    extQuat: (v) => (v / UNIT_FLOAT_TO_SIGNED16VB).toFixed(3),
+    localQuat: (v) => (v / UNIT_FLOAT_TO_SIGNED16VB).toFixed(3),
+    u: (v) => (v / UNIT_FLOAT_TO_SIGNED16VB).toFixed(3),
+    u_state: (v) => (v / UNIT_FLOAT_TO_SIGNED16VB).toFixed(3),
+    dv: (v, i) => (i < 3 ? `${(v / 10).toFixed(1)} N/kg` : `${(v / 10).toFixed(1)} Nm/(kgm^2)`),
+    alpha: (v) => `${(v * 10).toFixed(0)} °/s/s`,
+    alphaSp: (v) => `${(v * 10).toFixed(0)} °/s/s`,
+    spfSp: (v) => `${(v / 100).toFixed(2)} N/kg`,
+    omega: (v) => `${v.toFixed(0)} rad/s`,
+    omegaUnfiltered: (v) => `${v.toFixed(0)} rad/s`,
+    omega_dot: (v) => `${(v * 100).toFixed(0)} rad/s/s`,
+    pos: (v) => `${(v / 1000).toFixed(3)} m`,
+    posSp: (v) => `${(v / 1000).toFixed(3)} m`,
+    extPos: (v) => `${(v / 1000).toFixed(3)} m`,
+    localPos: (v) => `${(v / 1000).toFixed(3)} m`,
+    ekf_pos: (v) => `${(v / 1000).toFixed(3)} m`,
+    vel: (v) => `${(v / 100).toFixed(2)} m/s`,
+    velSp: (v) => `${(v / 100).toFixed(2)} m/s`,
+    extVel: (v) => `${(v / 100).toFixed(2)} m/s`,
+    localVel: (v) => `${(v / 100).toFixed(2)} m/s`,
+    ekf_vel: (v) => `${(v / 100).toFixed(2)} m/s`,
+    accSp: (v) => `${(v / 100).toFixed(2)} m/s/s`,
+    extTime: (v) => `${(v / 1000).toFixed(3)} ms`,
+    ekf_acc_b: (v) => `${(v / 1000).toFixed(3)} m/s/s`,
+    ekf_gyro_b: (v) => `${(v / 1000).toFixed(3)} °/s`,
+    // legacy Euler attitude fields, logged in mrad
+    ekf_att: (v) => `${((v / 1000) * (180 / Math.PI)).toFixed(3)} °`,
+    extAtt: (v) => `${((v / 1000) * (180 / Math.PI)).toFixed(3)} °`,
+};
+
+/**
+ * @param {string} fieldName
+ * @param {number} value
+ * @returns {string | undefined} undefined if fieldName is not an Indiflight field
+ */
+function decodeIndiflightFieldToFriendly(fieldName, value) {
+    const match = /^(\w+?)(?:\[(\d+)\])?$/.exec(fieldName);
+    const format = match && Object.hasOwn(INDIFLIGHT_FIELD_FORMATS, match[1]) && INDIFLIGHT_FIELD_FORMATS[match[1]];
+    if (!format || typeof value !== "number") {
+        return undefined;
+    }
+    return format(value, Number(match[2] ?? 0));
+}
+
 FlightLogFieldPresenter.presentFlags = function (flags, flagNames) {
     let printedFlag = false,
         i = 0,
@@ -295,6 +346,12 @@ FlightLogFieldPresenter.decodeFieldToFriendly = function (flightLog, fieldName, 
         case "gyroUnfilt[0]":
         case "gyroUnfilt[1]":
         case "gyroUnfilt[2]":
+        case "gyroSp[0]":
+        case "gyroSp[1]":
+        case "gyroSp[2]":
+        case "gyroADCafterRpm[0]":
+        case "gyroADCafterRpm[1]":
+        case "gyroADCafterRpm[2]":
             return `${flightLog
                 .gyroRawToDegreesPerSecond(value / highResolutionScale)
                 .toFixed(highResolutionAddPrecision)} °/s`;
@@ -367,11 +424,14 @@ FlightLogFieldPresenter.decodeFieldToFriendly = function (flightLog, fieldName, 
         case "accSmooth[0]":
         case "accSmooth[1]":
         case "accSmooth[2]":
+        case "accADCafterRpm[0]":
+        case "accADCafterRpm[1]":
+        case "accADCafterRpm[2]":
             return `${flightLog.accRawToGs(value).toFixed(2 + highResolutionAddPrecision)} g`;
 
         case "vbatLatest":
             if (
-                flightLog.getSysConfig().firmwareType === FIRMWARE_TYPE_BETAFLIGHT &&
+                isBetaflightFamily(flightLog.getSysConfig().firmwareType) &&
                 semver.gte(flightLog.getSysConfig().firmwareVersion, "4.0.0")
             ) {
                 return (
@@ -379,7 +439,7 @@ FlightLogFieldPresenter.decodeFieldToFriendly = function (flightLog, fieldName, 
                     `, ${(value / 100 / flightLog.getNumCellsEstimate()).toFixed(2)} V/cell`
                 );
             } else if (
-                (flightLog.getSysConfig().firmwareType === FIRMWARE_TYPE_BETAFLIGHT &&
+                (isBetaflightFamily(flightLog.getSysConfig().firmwareType) &&
                     semver.gte(flightLog.getSysConfig().firmwareVersion, "3.1.0")) ||
                 (flightLog.getSysConfig().firmwareType === FIRMWARE_TYPE_CLEANFLIGHT &&
                     semver.gte(flightLog.getSysConfig().firmwareVersion, "2.0.0"))
@@ -399,7 +459,7 @@ FlightLogFieldPresenter.decodeFieldToFriendly = function (flightLog, fieldName, 
 
         case "amperageLatest":
             if (
-                (flightLog.getSysConfig().firmwareType === FIRMWARE_TYPE_BETAFLIGHT &&
+                (isBetaflightFamily(flightLog.getSysConfig().firmwareType) &&
                     semver.gte(flightLog.getSysConfig().firmwareVersion, "3.1.7")) ||
                 (flightLog.getSysConfig().firmwareType === FIRMWARE_TYPE_CLEANFLIGHT &&
                     semver.gte(flightLog.getSysConfig().firmwareVersion, "2.0.0"))
@@ -408,7 +468,7 @@ FlightLogFieldPresenter.decodeFieldToFriendly = function (flightLog, fieldName, 
                     `${(value / 100).toFixed(2)}A` + `, ${(value / 100 / flightLog.getNumMotors()).toFixed(2)} A/motor`
                 );
             } else if (
-                flightLog.getSysConfig().firmwareType === FIRMWARE_TYPE_BETAFLIGHT &&
+                isBetaflightFamily(flightLog.getSysConfig().firmwareType) &&
                 semver.gte(flightLog.getSysConfig().firmwareVersion, "3.1.0")
             ) {
                 return (
@@ -497,7 +557,7 @@ FlightLogFieldPresenter.decodeFieldToFriendly = function (flightLog, fieldName, 
             return FlightLogFieldPresenter.decodeDebugFieldToFriendly(flightLog, fieldName, value);
 
         default:
-            return value?.toFixed(0);
+            return decodeIndiflightFieldToFriendly(fieldName, value) ?? value?.toFixed(0);
     }
 };
 
@@ -568,6 +628,12 @@ FlightLogFieldPresenter.ConvertFieldValue = function (flightLog, fieldName, toFr
         case "gyroUnfilt[0]":
         case "gyroUnfilt[1]":
         case "gyroUnfilt[2]":
+        case "gyroSp[0]":
+        case "gyroSp[1]":
+        case "gyroSp[2]":
+        case "gyroADCafterRpm[0]":
+        case "gyroADCafterRpm[1]":
+        case "gyroADCafterRpm[2]":
             return toFriendly
                 ? flightLog.gyroRawToDegreesPerSecond(value / highResolutionScale)
                 : (value * highResolutionScale) / flightLog.gyroRawToDegreesPerSecond(1);
@@ -628,16 +694,19 @@ FlightLogFieldPresenter.ConvertFieldValue = function (flightLog, fieldName, toFr
         case "accSmooth[0]":
         case "accSmooth[1]":
         case "accSmooth[2]":
+        case "accADCafterRpm[0]":
+        case "accADCafterRpm[1]":
+        case "accADCafterRpm[2]":
             return toFriendly ? flightLog.accRawToGs(value) : value / flightLog.accRawToGs(1);
 
         case "vbatLatest":
             if (
-                flightLog.getSysConfig().firmwareType === FIRMWARE_TYPE_BETAFLIGHT &&
+                isBetaflightFamily(flightLog.getSysConfig().firmwareType) &&
                 semver.gte(flightLog.getSysConfig().firmwareVersion, "4.0.0")
             ) {
                 return toFriendly ? value / 100 : value * 100;
             } else if (
-                (flightLog.getSysConfig().firmwareType === FIRMWARE_TYPE_BETAFLIGHT &&
+                (isBetaflightFamily(flightLog.getSysConfig().firmwareType) &&
                     semver.gte(flightLog.getSysConfig().firmwareVersion, "3.1.0")) ||
                 (flightLog.getSysConfig().firmwareType === FIRMWARE_TYPE_CLEANFLIGHT &&
                     semver.gte(flightLog.getSysConfig().firmwareVersion, "2.0.0"))
@@ -649,14 +718,14 @@ FlightLogFieldPresenter.ConvertFieldValue = function (flightLog, fieldName, toFr
 
         case "amperageLatest":
             if (
-                (flightLog.getSysConfig().firmwareType === FIRMWARE_TYPE_BETAFLIGHT &&
+                (isBetaflightFamily(flightLog.getSysConfig().firmwareType) &&
                     semver.gte(flightLog.getSysConfig().firmwareVersion, "3.1.7")) ||
                 (flightLog.getSysConfig().firmwareType === FIRMWARE_TYPE_CLEANFLIGHT &&
                     semver.gte(flightLog.getSysConfig().firmwareVersion, "2.0.0"))
             ) {
                 return toFriendly ? value / 100 : value * 100;
             } else if (
-                flightLog.getSysConfig().firmwareType === FIRMWARE_TYPE_BETAFLIGHT &&
+                isBetaflightFamily(flightLog.getSysConfig().firmwareType) &&
                 semver.gte(flightLog.getSysConfig().firmwareVersion, "3.1.0")
             ) {
                 return toFriendly ? value / 100 : value * 100;

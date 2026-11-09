@@ -1,5 +1,5 @@
 import semver from "semver";
-import { FIRMWARE_TYPE_BETAFLIGHT, FIRMWARE_TYPE_CLEANFLIGHT } from "./flightlog_fielddefs";
+import { FIRMWARE_TYPE_CLEANFLIGHT, isBetaflightFamily } from "./flightlog_fielddefs";
 
 //Convert a hexadecimal string (that represents a binary 32-bit float) into a float
 export function hexToFloat(string) {
@@ -388,11 +388,10 @@ export function firmwareGreaterOrEqual(sysConfig, bf_version, cf_version) {
      *                      False when firmware version is lower than the requested version
      ***/
     if (cf_version === undefined) {
-        return sysConfig.firmwareType === FIRMWARE_TYPE_BETAFLIGHT && semver.gte(sysConfig.firmwareVersion, bf_version);
+        return isBetaflightFamily(sysConfig.firmwareType) && semver.gte(sysConfig.firmwareVersion, bf_version);
     } else {
         return (
-            (sysConfig.firmwareType === FIRMWARE_TYPE_BETAFLIGHT &&
-                semver.gte(sysConfig.firmwareVersion, bf_version)) ||
+            (isBetaflightFamily(sysConfig.firmwareType) && semver.gte(sysConfig.firmwareVersion, bf_version)) ||
             (sysConfig.firmwareType === FIRMWARE_TYPE_CLEANFLIGHT && semver.gte(sysConfig.firmwareVersion, cf_version))
         );
     }
