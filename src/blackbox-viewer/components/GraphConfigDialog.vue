@@ -103,7 +103,7 @@
 
                         <!-- Field grid (PID table style) -->
                         <div
-                            class="grid grid-cols-[11rem_auto_auto_auto_2rem_auto_auto_2rem] gap-x-3 gap-y-1 items-center min-w-0"
+                            class="grid grid-cols-[11rem_auto_auto_auto_2rem_auto_auto_auto_2rem] gap-x-3 gap-y-1 items-center min-w-0"
                         >
                             <!-- Header -->
                             <div />
@@ -113,6 +113,12 @@
                             <div class="text-xs text-center text-dimmed">Color</div>
                             <div class="text-xs text-center text-dimmed">Min</div>
                             <div class="text-xs text-center text-dimmed">Max</div>
+                            <div
+                                class="text-xs text-center text-dimmed"
+                                title="Share one scale with the other checked fields of this graph"
+                            >
+                                Common
+                            </div>
                             <div />
 
                             <!-- Field rows -->
@@ -240,6 +246,13 @@
                                         />
                                     </div>
                                 </UContextMenu>
+                                <div class="flex justify-center">
+                                    <UCheckbox
+                                        v-model="field.commonScale"
+                                        :aria-label="`Common scale for ${friendlyName(field.name)}`"
+                                        @update:model-value="emitUpdate()"
+                                    />
+                                </div>
                                 <UButton
                                     variant="ghost"
                                     color="error"
@@ -487,6 +500,7 @@ function convertToConfig() {
                 },
                 color: f.color,
                 lineWidth: f.lineWidth || 1,
+                commonScale: f.commonScale,
             })),
     }));
 }
@@ -603,6 +617,7 @@ function makeField(name, existing, color) {
         },
         color: color || existing?.color || palette[0].color,
         lineWidth: existing?.lineWidth ?? 1,
+        commonScale: existing?.commonScale ?? true,
     };
 }
 

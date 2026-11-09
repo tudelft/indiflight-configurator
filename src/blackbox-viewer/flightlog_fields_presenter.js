@@ -181,6 +181,7 @@ const FRIENDLY_FIELD_NAMES = {
     gpsTrajectoryTiltAngle: "GPS Traject. tilt angle",
 };
 
+const STANDARD_GRAVITY = 9.80665; // m/s/s per g
 const UNIT_FLOAT_TO_SIGNED16VB = (127 << 6) - 1; // Indiflight scale for values in [-1, 1]
 
 // Indiflight-only fields, keyed by field name without the array index; must match the scaling in Indiflight's blackbox.c
@@ -427,7 +428,7 @@ FlightLogFieldPresenter.decodeFieldToFriendly = function (flightLog, fieldName, 
         case "accADCafterRpm[0]":
         case "accADCafterRpm[1]":
         case "accADCafterRpm[2]":
-            return `${flightLog.accRawToGs(value).toFixed(2 + highResolutionAddPrecision)} g`;
+            return `${(flightLog.accRawToGs(value) * STANDARD_GRAVITY).toFixed(2 + highResolutionAddPrecision)} m/s/s`;
 
         case "vbatLatest":
             if (

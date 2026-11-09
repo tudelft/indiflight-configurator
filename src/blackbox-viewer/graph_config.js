@@ -2,6 +2,33 @@ import { FlightLogFieldPresenter } from "./flightlog_fields_presenter";
 import { RATES_TYPE } from "./flightlog_fielddefs";
 import { escapeRegExp } from "./tools";
 import { getDebugModes } from "../js/utils/debugModes";
+import { useSettingsStore } from "./stores/settings.js";
+
+const COMMON_SCALE_MARGIN = 1.05;
+
+/**
+ * Give all fields of a graph that have commonScale (default on) one shared min/max: the envelope of their ranges.
+ * @param {Array<{commonScale?: boolean, curve: {MinMax: {min: number, max: number}}}>} fields
+ */
+function applyCommonScale(fields) {
+    const shared = fields.filter((field) => field.commonScale ?? true);
+    if (shared.length < 2) {
+        return;
+    }
+
+    const min = Math.min(...shared.map((field) => field.curve.MinMax.min));
+    const max = Math.max(...shared.map((field) => field.curve.MinMax.max));
+    const center = (max + min) / 2;
+    const halfRange = ((max - min) / 2) * COMMON_SCALE_MARGIN;
+    if (!(halfRange > 0)) {
+        return;
+    }
+
+    for (const field of shared) {
+        // MinMax may still be shared with the caller's config, so replace it rather than mutate it
+        field.curve = { ...field.curve, MinMax: { min: center - halfRange, max: center + halfRange } };
+    }
+}
 
 export function GraphConfig(graphConfig) {
     const listeners = [];
@@ -134,6 +161,8 @@ export function GraphConfig(graphConfig) {
                 const fields = this.extendFields(flightLog, field);
                 newGraph.fields = newGraph.fields.concat(fields);
             }
+
+            applyCommonScale(newGraph.fields);
 
             newGraphs.push(newGraph);
         }
@@ -284,6 +313,9 @@ GraphConfig.getDefaultCurveForField = function (flightLog, fieldName) {
     const gyroScaleMargin = 1.2; // Give a 20% margin for gyro graphs
     const highResolutionScale = sysConfig.blackbox_high_resolution > 0 ? 10 : 1;
     try {
+        if (useSettingsStore().userSettings.onlyAutoScaling) {
+            return getCurveForMinMaxFields(fieldName);
+        }
         if (
             fieldName.match(/^motor\[/) ||
             fieldName === "rcCommands[3]" || // Throttle scaled

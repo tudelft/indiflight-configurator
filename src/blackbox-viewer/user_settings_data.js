@@ -105,6 +105,8 @@ export const defaultUserSettings = {
     drawLapTimer: false,
     drawGradient: false,
     drawVerticalBar: true,
+    onlyAutoScaling: true, // scale every graph field to its logged min/max instead of per-field presets
+    useOnboardAttitude: true, // use the logged attitude quaternion, if any, for heading and the 3D craft
     graphSmoothOverride: true,
     graphExpoOverride: true,
     graphGridOverride: true,

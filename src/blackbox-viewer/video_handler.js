@@ -1,7 +1,7 @@
 import pinia from "./pinia_instance.js";
 import { useLogStore } from "./stores/log.js";
 import { useGraphStore } from "./stores/graph.js";
-import { usePlaybackStore } from "./stores/playback.js";
+import { usePlaybackStore, isVideoPlayableRate } from "./stores/playback.js";
 import { useAppStore } from "./stores/app.js";
 
 export function blackboxTimeFromVideoTime() {
@@ -83,7 +83,9 @@ export function loadVideo(file) {
     const video = playbackStore.videoElement;
     video.volume = 1;
     video.src = logStore.videoURL;
-    video.playbackRate = playbackStore.playbackRate / 100;
+    if (isVideoPlayableRate(playbackStore.playbackRate)) {
+        video.playbackRate = playbackStore.playbackRate / 100;
+    }
 }
 
 export function reportVideoError(e) {

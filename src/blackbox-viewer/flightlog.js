@@ -14,6 +14,7 @@ import {
     FIRMWARE_TYPE_CLEANFLIGHT,
 } from "./flightlog_fielddefs";
 import { IMU } from "./imu";
+import { useSettingsStore } from "./stores/settings.js";
 import { FIFOCache } from "./cache";
 import { binarySearchOrPrevious, binarySearchOrNext, constrain, validate, firmwareGreaterOrEqual } from "./tools";
 
@@ -272,7 +273,10 @@ export function FlightLog(logData) {
 
     const addComputedFieldNames = (disabled) => {
         // Heading: ATTITUDE enabled (quaternion available) OR both GYRO and ACC enabled (IMU estimation)
-        const hasQuaternion = fieldNames.includes("imuQuaternion[0]");
+        // Must match the branches of computeAttitude, or the computed fields after heading[] shift
+        const hasQuaternion =
+            fieldNames.includes("imuQuaternion[0]") ||
+            (fieldNames.includes("quat[0]") && useSettingsStore().userSettings.useOnboardAttitude);
         const hasGyroAndAcc = fieldNames.includes("gyroADC[0]") && fieldNames.includes("accSmooth[0]");
         if (hasQuaternion || hasGyroAndAcc) {
             fieldNames.push("heading[0]", "heading[1]", "heading[2]");
@@ -638,9 +642,27 @@ export function FlightLog(logData) {
         srcFrame,
         destFrame,
         fieldIndex,
-        { imuQuaternion, gyroADC, accSmooth, magADC, chunkIMU, sysConfig },
+        { imuQuaternion, nedQuaternion, gyroADC, accSmooth, magADC, chunkIMU, sysConfig },
     ) => {
-        if (imuQuaternion) {
+        if (nedQuaternion) {
+            // Indiflight's scalar-first NED quaternion; the scale cancels in the ratios below
+            const w = srcFrame[nedQuaternion[0]],
+                x = srcFrame[nedQuaternion[1]],
+                y = srcFrame[nedQuaternion[2]],
+                z = srcFrame[nedQuaternion[3]];
+            const norm2 = w * w + x * x + y * y + z * z;
+            // ZYX Euler angles in NED, converted to the NWU convention of the other branches: pitch negated
+            const roll = Math.atan2(2 * (w * x + y * z), norm2 - 2 * (x * x + y * y));
+            const pitch = -Math.asin(constrain((2 * (w * y - x * z)) / norm2, -1, 1));
+            let heading = Math.atan2(2 * (w * z + x * y), norm2 - 2 * (y * y + z * z));
+            if (heading < 0) {
+                heading += 2 * Math.PI;
+            }
+
+            destFrame[fieldIndex++] = roll;
+            destFrame[fieldIndex++] = pitch;
+            destFrame[fieldIndex++] = heading;
+        } else if (imuQuaternion) {
             const scaleFromFixedInt16 = 0x7fff; // 0x7FFF = 2^15 - 1
             const q = {
                 x: srcFrame[imuQuaternion[0]] / scaleFromFixedInt16,
@@ -845,6 +867,12 @@ export function FlightLog(logData) {
             fieldNameToIndex["imuQuaternion[1]"],
             fieldNameToIndex["imuQuaternion[2]"],
         ];
+        let nedQuaternion = [
+            fieldNameToIndex["quat[0]"],
+            fieldNameToIndex["quat[1]"],
+            fieldNameToIndex["quat[2]"],
+            fieldNameToIndex["quat[3]"],
+        ];
         let rcCommand = [
             fieldNameToIndex["rcCommand[0]"],
             fieldNameToIndex["rcCommand[1]"],
@@ -903,6 +931,9 @@ export function FlightLog(logData) {
         if (!imuQuaternion[0]) {
             imuQuaternion = false;
         }
+        if (!nedQuaternion[0] || !useSettingsStore().userSettings.useOnboardAttitude) {
+            nedQuaternion = false;
+        }
         if (!rcCommand[0]) {
             rcCommand = false;
         }
@@ -924,6 +955,7 @@ export function FlightLog(logData) {
             accSmooth,
             magADC,
             imuQuaternion,
+            nedQuaternion,
             rcCommand,
             setpoint,
             gpsCoord,
@@ -944,6 +976,7 @@ export function FlightLog(logData) {
 
         fieldIndex = computeAttitude(srcFrame, destFrame, fieldIndex, {
             imuQuaternion: ctx.imuQuaternion,
+            nedQuaternion: ctx.nedQuaternion,
             gyroADC: ctx.gyroADC,
             accSmooth: ctx.accSmooth,
             magADC: ctx.magADC,

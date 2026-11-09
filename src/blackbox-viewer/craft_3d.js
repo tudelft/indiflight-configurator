@@ -281,8 +281,32 @@ export function Craft3D(flightLog, canvas, propColors) {
         }
 
         // Display the craft's attitude
-        craftParent.rotation.x = -frame[frameFieldIndexes["heading[1]"]] /*- Math.PI / 2*/; // pitch
-        craftParent.rotation.y = frame[frameFieldIndexes["heading[0]"]]; // roll
+        const quatNed = new THREE.Quaternion();
+        if (frameFieldIndexes["quat[0]"] !== undefined && userSettings.useOnboardAttitude) {
+            // Indiflight logs a scalar-first NED quaternion scaled by UNIT_FLOAT_TO_SIGNED16VB
+            quatNed
+                .set(
+                    frame[frameFieldIndexes["quat[1]"]],
+                    frame[frameFieldIndexes["quat[2]"]],
+                    frame[frameFieldIndexes["quat[3]"]],
+                    frame[frameFieldIndexes["quat[0]"]],
+                )
+                .normalize();
+        } else {
+            // heading[] is roll, pitch, yaw in the NWU frame (see computeAttitude in flightlog.js)
+            const quatNwu = new THREE.Quaternion().setFromEuler(
+                new THREE.Euler(
+                    frame[frameFieldIndexes["heading[0]"]],
+                    frame[frameFieldIndexes["heading[1]"]],
+                    -frame[frameFieldIndexes["heading[2]"]],
+                    "ZYX",
+                ),
+            );
+            quatNed.set(quatNwu.x, -quatNwu.y, -quatNwu.z, quatNwu.w);
+        }
+
+        // NED to the scene frame: x right, y forward, z up
+        craftParent.quaternion.set(quatNed.y, quatNed.x, -quatNed.z, quatNed.w);
 
         renderer.render(scene, camera);
     };

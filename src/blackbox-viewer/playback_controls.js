@@ -8,6 +8,7 @@ import {
     GRAPH_STATE_PLAY,
     PLAYBACK_MIN_RATE,
     PLAYBACK_MAX_RATE,
+    isVideoPlayableRate,
 } from "./stores/playback.js";
 import { useAppStore } from "./stores/app.js";
 import { useSettingsStore } from "./stores/settings.js";
@@ -47,7 +48,10 @@ export function animationLoop() {
         return;
     }
 
-    if (logStore.hasVideo) {
+    // Below the video's minimum rate the log time drives playback and the video only follows it
+    const videoDrivesTime = logStore.hasVideo && isVideoPlayableRate(playbackStore.playbackRate);
+
+    if (videoDrivesTime) {
         logStore.currentBlackboxTime = blackboxTimeFromVideoTime();
     } else if (playbackStore.graphState === GRAPH_STATE_PLAY) {
         let delta;
@@ -63,6 +67,11 @@ export function animationLoop() {
         if (logStore.currentBlackboxTime > logStore.flightLog.getMaxTime()) {
             logStore.currentBlackboxTime = logStore.flightLog.getMaxTime();
             setGraphState(GRAPH_STATE_PAUSED);
+        }
+
+        if (logStore.hasVideo) {
+            playbackStore.videoElement.currentTime =
+                (logStore.currentBlackboxTime - logStore.flightLog.getMinTime()) / 1000000 + playbackStore.videoOffset;
         }
     }
 
@@ -126,7 +135,7 @@ export function setGraphState(newState) {
 
     switch (newState) {
         case GRAPH_STATE_PLAY:
-            if (logStore.hasVideo) {
+            if (logStore.hasVideo && isVideoPlayableRate(playbackStore.playbackRate)) {
                 playbackStore.videoElement.play();
             }
             break;
@@ -158,12 +167,21 @@ export function setCurrentBlackboxTime(newTime) {
 
 export function setPlaybackRate(rate) {
     const playbackStore = usePlaybackStore(pinia);
+    const logStore = useLogStore(pinia);
     if (rate >= PLAYBACK_MIN_RATE && rate <= PLAYBACK_MAX_RATE) {
         playbackStore.playbackRate = rate;
 
-        if (playbackStore.videoElement) {
-            playbackStore.videoElement.playbackRate = rate / 100;
+        const video = playbackStore.videoElement;
+        if (video && isVideoPlayableRate(rate)) {
+            video.playbackRate = rate / 100;
+            if (logStore.hasVideo && playbackStore.graphState === GRAPH_STATE_PLAY && video.paused) {
+                video.play();
+            }
+        } else if (video && !video.paused) {
+            video.pause();
         }
+        // The time source may have switched between video and log
+        lastRenderTime = false;
     }
 }
 

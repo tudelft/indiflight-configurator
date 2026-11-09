@@ -3,10 +3,22 @@ import { ref, shallowRef, computed } from "vue";
 
 export const GRAPH_STATE_PAUSED = 0;
 export const GRAPH_STATE_PLAY = 1;
-export const PLAYBACK_MIN_RATE = 10;
+export const PLAYBACK_MIN_RATE = 1;
 export const PLAYBACK_MAX_RATE = 300;
 export const PLAYBACK_DEFAULT_RATE = 100;
-export const PLAYBACK_RATE_STEP = 5;
+export const PLAYBACK_RATE_STEP = 1;
+
+// Chromium rejects media playback rates outside [0.0625, 16]; see kMinRate/kMaxRate in html_media_element.h
+const VIDEO_MIN_RATE = 6.25;
+const VIDEO_MAX_RATE = 1600;
+
+/**
+ * @param {number} rate playback rate in percent
+ * @returns {boolean} whether a video element can play at this rate
+ */
+export function isVideoPlayableRate(rate) {
+    return rate >= VIDEO_MIN_RATE && rate <= VIDEO_MAX_RATE;
+}
 
 export const usePlaybackStore = defineStore("playback", () => {
     const graphState = ref(GRAPH_STATE_PAUSED);

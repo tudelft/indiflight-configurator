@@ -69,6 +69,15 @@
                         <SettingRow label="TimeBar" help="Show the vertical timebar">
                             <USwitch v-model="local.drawVerticalBar" size="sm" />
                         </SettingRow>
+                        <SettingRow label="Auto scaling" help="Always scale graph axes to the logged min/max">
+                            <USwitch v-model="local.onlyAutoScaling" size="sm" />
+                        </SettingRow>
+                        <SettingRow
+                            label="Logged attitude"
+                            help="Use the logged attitude quaternion, if any, for the 3D craft and heading fields (reload the log to apply)"
+                        >
+                            <USwitch v-model="local.useOnboardAttitude" size="sm" />
+                        </SettingRow>
                     </UiBox>
 
                     <!-- Preferences -->

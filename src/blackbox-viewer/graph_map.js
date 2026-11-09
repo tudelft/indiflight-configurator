@@ -76,7 +76,8 @@ export function MapGrapher() {
         myMap = L.map("mapContainer", mapOptions);
 
         L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-            maxZoom: 19,
+            maxZoom: 22,
+            maxNativeZoom: 19, // OSM has no tiles beyond 19; upscale them when zooming further
             minZoom: 1,
             attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
         }).addTo(myMap);

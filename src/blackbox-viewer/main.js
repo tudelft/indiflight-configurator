@@ -745,7 +745,11 @@ export function bootstrapViewer() {
         saveWorkspaces(workspaceStore.workspaceGraphConfigs);
     };
     appStore.saveUserSettings = (newSettings) => {
+        const rescale = settingsStore.userSettings.onlyAutoScaling !== newSettings.onlyAutoScaling;
         settingsStore.saveAll(newSettings);
+        if (rescale && logStore.flightLog) {
+            graphStore.activeGraphConfig.adaptGraphs(logStore.flightLog, graphStore.graphConfig);
+        }
         // Theme is owned by the host configurator (see setBlackboxViewerDark); the viewer no
         // longer exposes or applies its own dark-mode setting, so nothing to do here for it.
         if (graph != null) {

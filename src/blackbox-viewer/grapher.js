@@ -68,7 +68,7 @@ export function FlightLogGrapher(flightLog, graphConfig, canvas, stickCanvas, cr
         craft3D = null,
         craft2D = null,
         analyser = null /* define a new spectrum analyser */,
-        watermarkLogo /* Watermark feature */;
+        watermarkLogo; /* Watermark feature */
     this.onSeek = null;
 
     this.getAnalyser = function () {
@@ -411,14 +411,41 @@ export function FlightLogGrapher(flightLog, graphConfig, canvas, stickCanvas, cr
         canvasContext.stroke();
     }
 
-    //Draw an origin line for a graph (at the origin and spanning the window)
-    function drawAxisLine() {
+    //Draw a solid line at the bottom edge of a graph to separate it from the next one
+    function drawAxisBottomLine(plotHeight) {
         canvasContext.strokeStyle = ThemeColors.getGraphAxis();
         canvasContext.lineWidth = 1;
-        canvasContext.setLineDash([5]); // Make the center line a dash
         canvasContext.beginPath();
-        canvasContext.moveTo(0, 0);
-        canvasContext.lineTo(canvas.width, 0);
+        canvasContext.moveTo(0, plotHeight / 2);
+        canvasContext.lineTo(canvas.width, plotHeight / 2);
+
+        canvasContext.stroke();
+    }
+
+    //Draw a dashed line where the value zero lies, if all visible fields of the graph put it at the same height
+    function drawAxisZeroLine(graphIndex, graph, plotHeight) {
+        let zeroY = null;
+        for (const [j, field] of graph.fields.entries()) {
+            if (graphConfig.isGraphFieldHidden(graphIndex, j)) {
+                continue;
+            }
+            const y = field.curve.lookup(0);
+            if (zeroY === null) {
+                zeroY = y;
+            } else if (Math.abs(y - zeroY) > 1e-3) {
+                return;
+            }
+        }
+        if (zeroY === null || Math.abs(zeroY) >= 1) {
+            return;
+        }
+
+        canvasContext.strokeStyle = ThemeColors.getGraphAxis();
+        canvasContext.lineWidth = 1;
+        canvasContext.setLineDash([5]);
+        canvasContext.beginPath();
+        canvasContext.moveTo(0, (-zeroY * plotHeight) / 2);
+        canvasContext.lineTo(canvas.width, (-zeroY * plotHeight) / 2);
 
         canvasContext.stroke();
         canvasContext.setLineDash([]);
@@ -858,7 +885,8 @@ export function FlightLogGrapher(flightLog, graphConfig, canvas, stickCanvas, cr
 
                 canvasContext.translate(0, canvas.height * graph.y);
 
-                drawAxisLine();
+                drawAxisBottomLine(canvas.height * graph.height);
+                drawAxisZeroLine(i, graph, canvas.height * graph.height);
 
                 if (!options.graphGridOverride && graph.fields.length > 0) {
                     drawGrid(graph.fields[0].curve, canvas.height * graph.height);
@@ -887,7 +915,7 @@ export function FlightLogGrapher(flightLog, graphConfig, canvas, stickCanvas, cr
                 }
 
                 if (graph.label) {
-                    drawAxisLabel(graph.label);
+                    drawAxisLabel(graph.label, (-canvas.height * graph.height) / 2 + 16);
                 }
 
                 canvasContext.restore();
