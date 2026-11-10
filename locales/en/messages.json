@@ -650,6 +650,9 @@
     "connectionFailedLocalNetworkIOS": {
         "message": "On iOS, allow <strong>Local Network</strong> access for Betaflight under Settings &rarr; Privacy &amp; Security &rarr; Local Network, then try again."
     },
+    "connectionFailedSelfSignedCert": {
+        "message": "If the device uses a self-signed certificate, <a href=\"{{url}}\" target=\"_blank\" rel=\"noopener\">open it in a new tab</a>, accept the security warning, then connect again."
+    },
     "connectionLostTitle": {
         "message": "Connection lost"
     },

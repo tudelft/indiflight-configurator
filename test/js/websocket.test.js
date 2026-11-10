@@ -66,9 +66,56 @@ describe("Websocket protocol — superseded socket guard (manual/SITL reconnect)
         expect(disconnected).not.toHaveBeenCalled();
         expect(second.close).not.toHaveBeenCalled();
 
-        // The CURRENT socket's close still tears down normally.
+        // The CURRENT socket's close still tears down normally once it has opened.
+        second.onopen({});
         await second.onclose({});
         expect(disconnected).toHaveBeenCalledTimes(1);
         expect(second.close).toHaveBeenCalled();
+    });
+
+    it("retries once without a subprotocol when the handshake fails (e.g. websocketd)", async () => {
+        const socket = new Websocket();
+        const disconnected = vi.fn();
+        socket.addEventListener("disconnect", disconnected);
+
+        await socket.connect("ws://10.0.0.1:5761");
+        const first = socket.ws;
+        expect(first.protocols).toEqual(["binary"]);
+
+        await first.onclose({ code: 1006 });
+        const retry = socket.ws;
+        expect(retry).not.toBe(first);
+        expect(retry.url).toBe("ws://10.0.0.1:5761");
+        expect(retry.protocols).toEqual([]);
+        expect(disconnected).not.toHaveBeenCalled();
+
+        // The retry failing too ends the attempt instead of looping.
+        await retry.onclose({ code: 1006 });
+        expect(socket.ws).toBe(retry);
+        expect(disconnected).toHaveBeenCalledTimes(1);
+    });
+
+    it("does not retry when an established session closes", async () => {
+        const socket = new Websocket();
+        const disconnected = vi.fn();
+        socket.addEventListener("disconnect", disconnected);
+
+        await socket.connect("ws://10.0.0.1:5761");
+        const ws = socket.ws;
+        ws.onopen({});
+        await ws.onclose({ code: 1000 });
+
+        expect(socket.ws).toBe(ws);
+        expect(disconnected).toHaveBeenCalledTimes(1);
+    });
+
+    it("a fresh connect() requests the subprotocol again after a fallback", async () => {
+        const socket = new Websocket();
+        await socket.connect("ws://10.0.0.1:5761");
+        await socket.ws.onclose({});
+        await socket.ws.onclose({});
+
+        await socket.connect("ws://10.0.0.1:5761");
+        expect(socket.ws.protocols).toEqual(["binary"]);
     });
 });

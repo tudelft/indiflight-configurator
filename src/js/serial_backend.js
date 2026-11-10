@@ -20,7 +20,7 @@ import { get as getConfig } from "./ConfigStorage";
 import semver from "semver";
 
 import { serial } from "./serial.js";
-import { isTauriIOS } from "./utils/checkCompatibility.js";
+import { isTauri, isTauriIOS } from "./utils/checkCompatibility.js";
 import { getConnectionState, State as ConnPhase } from "./connection_state.js";
 import { EventBus } from "../components/eventBus";
 import { unmountVueTab } from "./vue_tab_mounter";
@@ -749,6 +749,18 @@ function abortConnection(messageKey) {
         serial.isLocalNetworkAddress(connectingTo)
     ) {
         message += ` ${i18n.getMessage("connectionFailedLocalNetworkIOS")}`;
+    }
+
+    // A browser rejects a self-signed wss:// certificate silently, without a prompt. Link to
+    // the bridge over https so the user can accept the certificate there, then reconnect.
+    // Tauri would open the link in the system browser, whose exception the webview never sees.
+    if (effectiveKey === "connectionFailed" && /^wss:\/\//i.test(connectingTo) && !isTauri()) {
+        try {
+            const url = `https://${new URL(connectingTo).host}/`;
+            message += ` ${i18n.getMessage("connectionFailedSelfSignedCert", { url })}`;
+        } catch {
+            // Unparseable URL: no link to offer.
+        }
     }
 
     // A failed handshake (invalid/garbage API version) is a HANDSHAKING ->

@@ -57,7 +57,12 @@ class Websocket extends EventTarget {
         return new Uint8Array(buffer);
     }
 
-    async connect(path) {
+    /**
+     * @param {string} path - ws:// or wss:// URL.
+     * @param {object} [_options] - unused; serial-style connection options.
+     * @param {string[]} [protocols] - subprotocols to request.
+     */
+    async connect(path, _options, protocols = ["binary"]) {
         this.address = path;
         console.log(`${this.logHead} Connecting to ${this.address}`);
 
@@ -79,7 +84,7 @@ class Websocket extends EventTarget {
         // disconnect() against — and close — the newer socket.
         let ws;
         try {
-            ws = new WebSocket(this.address, ["binary"]);
+            ws = new WebSocket(this.address, protocols);
         } catch (e) {
             // Invalid URL/scheme, e.g. a raw tcp:// manual override, which a browser
             // cannot open (raw TCP needs the desktop app's native transport).
@@ -90,10 +95,13 @@ class Websocket extends EventTarget {
         this.ws = ws;
         let socket = this;
 
+        let opened = false;
+
         this.ws.onopen = function (e) {
             if (socket.ws !== ws) {
                 return;
             }
+            opened = true;
             console.log(`${socket.logHead} Connected: `, e);
             socket.connected = true;
             socket.dispatchEvent(
@@ -110,6 +118,14 @@ class Websocket extends EventTarget {
                 return;
             }
             console.log(`${socket.logHead} Connection closed: `, e);
+
+            // Browsers abort the handshake when the server does not echo a requested
+            // subprotocol, and bridges such as websocketd never do. Retry once without it.
+            if (!opened && protocols.length > 0) {
+                console.log(`${socket.logHead} Retrying without subprotocol`);
+                socket.connect(path, _options, []);
+                return;
+            }
 
             await socket.disconnect();
             socket.dispatchEvent(new CustomEvent("disconnect", { detail: { socketId: socket.address } }));
