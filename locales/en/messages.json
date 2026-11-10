@@ -140,6 +140,10 @@
         "message": "Enter the serial path or URL to connect to.",
         "description": "Helper text in the connect dialog when choosing the manual port mode."
     },
+    "connectManualWebSocketHint": {
+        "message": "TCP (tcp://) is not supported in the browser. Use a WebSocket URL instead, preferably wss://host:port.",
+        "description": "Hint in the manual connect dialog of the web build, which can only open WebSocket connections."
+    },
     "autoConnect": {
         "message": "Auto-Connect"
     },

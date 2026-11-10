@@ -132,7 +132,9 @@ export function checkCompatibility() {
     const hasSerialSupport = checkSerialSupport();
     const hasBluetoothSupport = checkBluetoothSupport();
     const hasUsbSupport = checkUsbSupport();
-    const hasWebTransport = hasSerialSupport || hasBluetoothSupport || hasUsbSupport;
+    // Browsers without Web Serial/Bluetooth/USB (e.g. Firefox, Safari) can still reach an FC over ws:// or wss://.
+    const hasWebSocketSupport = typeof globalThis.WebSocket === "function";
+    const hasWebTransport = hasSerialSupport || hasBluetoothSupport || hasUsbSupport || hasWebSocketSupport;
 
     const isNative = Capacitor.isNativePlatform();
     const isTauriShell = isTauri();
@@ -149,6 +151,7 @@ export function checkCompatibility() {
     console.log("Serial: ", hasSerialSupport);
     console.log("Bluetooth: ", hasBluetoothSupport);
     console.log("USB: ", hasUsbSupport);
+    console.log("WebSocket: ", hasWebSocketSupport);
     console.log("OS: ", getOS());
     console.log("Android: ", isAndroid());
     console.log("iOS: ", isIOS());
@@ -159,7 +162,7 @@ export function checkCompatibility() {
     }
 
     let errorMessage =
-        "Betaflight requires a browser with at least one of: Web Serial, Web Bluetooth, or Web USB.<br/>";
+        "Betaflight requires a browser with at least one of: Web Serial, Web Bluetooth, Web USB, or WebSocket.<br/>";
 
     if (!hasSerialSupport) {
         errorMessage += "<br/>- Serial API support is not available.";

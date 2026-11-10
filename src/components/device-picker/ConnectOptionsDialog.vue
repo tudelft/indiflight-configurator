@@ -5,6 +5,13 @@
                 <p class="connect-options__help">
                     {{ mode === "virtual" ? $t("connectVirtualDescription") : $t("connectManualDescription") }}
                 </p>
+                <UAlert
+                    v-if="mode === 'manual' && showWebSocketHint"
+                    color="info"
+                    variant="subtle"
+                    icon="i-lucide-info"
+                    :description="$t('connectManualWebSocketHint')"
+                />
                 <label v-if="mode === 'virtual'" class="connect-options__field">
                     <span>{{ $t("virtualMSPVersion") }}</span>
                     <USelect
@@ -43,6 +50,8 @@
 <script>
 import { computed, defineComponent, ref, watch } from "vue";
 import { i18n } from "../../js/localization";
+import { Capacitor } from "@capacitor/core";
+import { isTauri } from "../../js/utils/checkCompatibility";
 
 const FIRMWARE_VERSIONS = [
     { value: "1.48.0", label: "MSP: 1.48 | Firmware: 2026.06.*" },
@@ -107,8 +116,12 @@ export default defineComponent({
             open.value = false;
         }
 
+        // Browsers have no raw TCP sockets, so only the native shells can reach tcp:// endpoints.
+        const showWebSocketHint = !Capacitor.isNativePlatform() && !isTauri();
+
         return {
             open,
+            showWebSocketHint,
             version,
             portOverride,
             firmwareVersions: FIRMWARE_VERSIONS,

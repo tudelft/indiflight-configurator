@@ -6,7 +6,7 @@ import DeviceHandler from "../device_handler.js";
  */
 export const DEFAULT_DEVELOPMENT_OPTIONS = {
     showVirtualMode: false,
-    showManualMode: false,
+    showManualMode: true,
     showAllSerialDevices: false,
     backupOnFlash: 1, // 0 = disabled, 1 = enabled, 2 = ask
 };
