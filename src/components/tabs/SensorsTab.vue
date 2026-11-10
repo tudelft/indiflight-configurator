@@ -815,6 +815,7 @@
 import { ref, reactive, computed, watch, onMounted, onUnmounted, nextTick } from "vue";
 import semver from "semver";
 import { useFlightControllerStore } from "@/stores/fc";
+import { isIndiflight } from "@/js/utils/indiflight";
 import { useReboot } from "@/composables/useReboot";
 import { useIsMounted } from "@/composables/useIsMounted";
 import { useDirtyState } from "@/composables/useDirtyState";
@@ -2170,12 +2171,18 @@ function initInstruments() {
     }
 }
 
+// Indiflight reports pitch with the opposite sign
+function displayPitch() {
+    const pitch = fcStore.sensorData.kinematics[1];
+    return isIndiflight(fcStore.config) ? -pitch : pitch;
+}
+
 function renderModel() {
     if (!modelInstance) {
         return;
     }
     const k = fcStore.sensorData.kinematics;
-    const x = -degToRad(k[1]);
+    const x = -degToRad(displayPitch());
     const y = degToRad(k[2] * -1 - yawFix.value);
     const z = -degToRad(k[0]);
     modelInstance.rotateTo(x, y, z);
@@ -2200,7 +2207,7 @@ function pollAttitude() {
         attitudeRaw.heading = headingDeg;
         if (attitudeIndicator) {
             attitudeIndicator.setRoll(k[0]);
-            attitudeIndicator.setPitch(k[1]);
+            attitudeIndicator.setPitch(displayPitch());
         }
         if (headingIndicator) {
             headingIndicator.setHeading(headingDeg);
