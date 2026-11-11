@@ -45,11 +45,13 @@ export function Craft3D(flightLog, canvas, propColors) {
                 const shape = new THREE.Shape();
 
                 if (i === NUM_PROP_LEVELS - 1) {
-                    //work around three.js bug that requires the initial point to be on the radius to complete a full circle
-                    shape.moveTo(propRadius, 0);
-                    shape.absarc(0, 0, propRadius, 0, (Math.PI * 2 * i) / (NUM_PROP_LEVELS - 1));
+                    // Full disc: no spoke to the centre, it would leave a seam
+                    shape.absarc(0, 0, propRadius, 0, Math.PI * 2);
                 } else {
+                    // Pie wedge. moveTo() adds no curve, so absarc() won't join the arc to the centre
+                    // on its own; the explicit lineTo() makes the outline centre -> rim -> arc -> centre.
                     shape.moveTo(0, 0);
+                    shape.lineTo(propRadius, 0);
                     shape.absarc(0, 0, propRadius, 0, (Math.PI * 2 * i) / (NUM_PROP_LEVELS - 1));
                 }
 
@@ -68,19 +70,18 @@ export function Craft3D(flightLog, canvas, propColors) {
             ARROW_HEAD_LENGTH = HUB_RADIUS * 0.55,
             ARROW_LENGTH = ARROW_STALK_LENGTH + ARROW_HEAD_LENGTH;
 
-        const path = new THREE.Path(),
+        const shape = new THREE.Shape(),
             offset = -ARROW_LENGTH / 2;
 
-        path.moveTo(-ARROW_STALK_RADIUS, 0 + offset);
-        path.lineTo(-ARROW_STALK_RADIUS, ARROW_STALK_LENGTH + offset);
-        path.lineTo(-ARROW_HEAD_RADIUS, ARROW_STALK_LENGTH + offset);
-        path.lineTo(0, ARROW_LENGTH + offset);
-        path.lineTo(ARROW_HEAD_RADIUS, ARROW_STALK_LENGTH + offset);
-        path.lineTo(ARROW_STALK_RADIUS, ARROW_STALK_LENGTH + offset);
-        path.lineTo(ARROW_STALK_RADIUS, 0 + offset);
+        shape.moveTo(-ARROW_STALK_RADIUS, 0 + offset);
+        shape.lineTo(-ARROW_STALK_RADIUS, ARROW_STALK_LENGTH + offset);
+        shape.lineTo(-ARROW_HEAD_RADIUS, ARROW_STALK_LENGTH + offset);
+        shape.lineTo(0, ARROW_LENGTH + offset);
+        shape.lineTo(ARROW_HEAD_RADIUS, ARROW_STALK_LENGTH + offset);
+        shape.lineTo(ARROW_STALK_RADIUS, ARROW_STALK_LENGTH + offset);
+        shape.lineTo(ARROW_STALK_RADIUS, 0 + offset);
 
-        const shape = path.toShapes(true),
-            extrudeSettings = {
+        const extrudeSettings = {
                 depth: ARROW_DEPTH,
                 steps: 1,
                 bevelEnabled: false,
@@ -92,7 +93,7 @@ export function Craft3D(flightLog, canvas, propColors) {
     }
 
     function buildCraft() {
-        const path = new THREE.Path(),
+        const shape = new THREE.Shape(),
             ARM_WIDTH_RADIANS = 0.15,
             //How much wider is the motor mount than the arm
             MOTOR_MOUNT_WIDTH_RATIO = 2,
@@ -107,9 +108,9 @@ export function Craft3D(flightLog, canvas, propColors) {
                 armEnd = armStart + ARM_WIDTH_RADIANS * 2;
 
             if (i === 0) {
-                path.moveTo(Math.cos(armStart) * HUB_RADIUS, Math.sin(armStart) * HUB_RADIUS);
+                shape.moveTo(Math.cos(armStart) * HUB_RADIUS, Math.sin(armStart) * HUB_RADIUS);
             } else {
-                path.lineTo(Math.cos(armStart) * HUB_RADIUS, Math.sin(armStart) * HUB_RADIUS);
+                shape.lineTo(Math.cos(armStart) * HUB_RADIUS, Math.sin(armStart) * HUB_RADIUS);
             }
 
             // Unit vector pointing through the center of the arm
@@ -144,7 +145,7 @@ export function Craft3D(flightLog, canvas, propColors) {
 
             // Draw one half of the arm:
             for (const point of armPoints) {
-                path.lineTo(
+                shape.lineTo(
                     point.length * armVectorX - point.width * crossArmX,
                     point.length * armVectorY - point.width * crossArmY,
                 );
@@ -153,17 +154,16 @@ export function Craft3D(flightLog, canvas, propColors) {
             // And flip the points to draw the other half:
             for (let j = armPoints.length - 1; j >= 0; j--) {
                 const point = armPoints[j];
-                path.lineTo(
+                shape.lineTo(
                     point.length * armVectorX + point.width * crossArmX,
                     point.length * armVectorY + point.width * crossArmY,
                 );
             }
 
-            path.lineTo(Math.cos(armEnd) * HUB_RADIUS, Math.sin(armEnd) * HUB_RADIUS);
+            shape.lineTo(Math.cos(armEnd) * HUB_RADIUS, Math.sin(armEnd) * HUB_RADIUS);
         }
 
-        const shape = path.toShapes(true),
-            extrudeSettings = {
+        const extrudeSettings = {
                 depth: CRAFT_DEPTH,
                 steps: 1,
                 bevelEnabled: false,
