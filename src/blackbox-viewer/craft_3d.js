@@ -1,3 +1,4 @@
+import * as THREE from "three";
 import { useSettingsStore } from "./stores/settings.js";
 
 export function Craft3D(flightLog, canvas, propColors) {
@@ -32,14 +33,14 @@ export function Craft3D(flightLog, canvas, propColors) {
     function buildPropGeometry() {
         const props = new Array(NUM_PROP_LEVELS),
             extrudeSettings = {
-                amount: 0.1 * propRadius,
+                depth: 0.1 * propRadius,
                 steps: 1,
                 bevelEnabled: false,
             };
 
         for (let i = 0; i < NUM_PROP_LEVELS; i++) {
             if (i === 0) {
-                props[i] = new THREE.Geometry();
+                props[i] = new THREE.BufferGeometry();
             } else {
                 const shape = new THREE.Shape();
 
@@ -78,9 +79,9 @@ export function Craft3D(flightLog, canvas, propColors) {
         path.lineTo(ARROW_STALK_RADIUS, ARROW_STALK_LENGTH + offset);
         path.lineTo(ARROW_STALK_RADIUS, 0 + offset);
 
-        const shape = path.toShapes(true, false),
+        const shape = path.toShapes(true),
             extrudeSettings = {
-                amount: ARROW_DEPTH,
+                depth: ARROW_DEPTH,
                 steps: 1,
                 bevelEnabled: false,
             },
@@ -161,9 +162,9 @@ export function Craft3D(flightLog, canvas, propColors) {
             path.lineTo(Math.cos(armEnd) * HUB_RADIUS, Math.sin(armEnd) * HUB_RADIUS);
         }
 
-        const shape = path.toShapes(true, false),
+        const shape = path.toShapes(true),
             extrudeSettings = {
-                amount: CRAFT_DEPTH,
+                depth: CRAFT_DEPTH,
                 steps: 1,
                 bevelEnabled: false,
             },
@@ -176,7 +177,7 @@ export function Craft3D(flightLog, canvas, propColors) {
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 1000);
     const renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true });
-    const light = new THREE.HemisphereLight(0xe4e4ff, 0x405040, 1.1);
+    const light = new THREE.HemisphereLight(0xe4e4ff, 0x405040, 1.1 * Math.PI);
     const craft = new THREE.Object3D();
     const craftParent = new THREE.Object3D();
     const craftMesh = buildCraft();
