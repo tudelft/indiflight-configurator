@@ -182,23 +182,54 @@ const FRIENDLY_FIELD_NAMES = {
 };
 
 const STANDARD_GRAVITY = 9.80665; // m/s/s per g
+const ANGLE_UNITS_RADIANS = 2;
+
+/**
+ * Formats an angle or angular rate given in degrees in the user's angle unit. Radians get two more decimals since they
+ * are ~57x coarser.
+ * @param {number} degrees
+ * @param {number} decimals decimals in degrees
+ * @param {string} [perTime] e.g. "/s" or "/s/s"
+ */
+function formatAngle(degrees, decimals, perTime = "") {
+    if (useSettingsStore().userSettings.angleUnits === ANGLE_UNITS_RADIANS) {
+        return `${((degrees * Math.PI) / 180).toFixed(decimals + 2)} rad${perTime}`;
+    }
+    return `${degrees.toFixed(decimals)} °${perTime}`;
+}
+
 const UNIT_FLOAT_TO_SIGNED16VB = (127 << 6) - 1; // Indiflight scale for values in [-1, 1]
+const UNIT_FLOAT_TO_UNSIGNED16VB = (127 << 7) - 1; // Indiflight scale for values in [0, 1]
+const unitFloat = (v) => (v / UNIT_FLOAT_TO_SIGNED16VB).toFixed(3);
 
 // Indiflight-only fields, keyed by field name without the array index; must match the scaling in Indiflight's blackbox.c
 const INDIFLIGHT_FIELD_FORMATS = {
-    quat: (v) => (v / UNIT_FLOAT_TO_SIGNED16VB).toFixed(3),
-    quatSp: (v) => (v / UNIT_FLOAT_TO_SIGNED16VB).toFixed(3),
-    ekf_quat: (v) => (v / UNIT_FLOAT_TO_SIGNED16VB).toFixed(3),
-    extQuat: (v) => (v / UNIT_FLOAT_TO_SIGNED16VB).toFixed(3),
-    localQuat: (v) => (v / UNIT_FLOAT_TO_SIGNED16VB).toFixed(3),
-    u: (v) => (v / UNIT_FLOAT_TO_SIGNED16VB).toFixed(3),
-    u_state: (v) => (v / UNIT_FLOAT_TO_SIGNED16VB).toFixed(3),
+    quat: unitFloat,
+    quatSp: unitFloat,
+    ekf_quat: unitFloat,
+    extQuat: unitFloat,
+    localQuat: unitFloat,
+    hoverAttitude: unitFloat,
+    u: unitFloat,
+    u_state: unitFloat,
     dv: (v, i) => (i < 3 ? `${(v / 10).toFixed(1)} N/kg` : `${(v / 10).toFixed(1)} Nm/(kgm^2)`),
-    alpha: (v) => `${(v * 10).toFixed(0)} °/s/s`,
-    alphaSp: (v) => `${(v * 10).toFixed(0)} °/s/s`,
+    alpha: (v) => formatAngle(v * 10, 0, "/s/s"),
+    alphaSp: (v) => formatAngle(v * 10, 0, "/s/s"),
     spfSp: (v) => `${(v / 100).toFixed(2)} N/kg`,
     omega: (v) => `${v.toFixed(0)} rad/s`,
     omegaUnfiltered: (v) => `${v.toFixed(0)} rad/s`,
+    servo_feedback: (v) => formatAngle(v / 100, 2),
+    pitot_pressureZero: (v) => `${(v / 100).toFixed(2)} Pa`,
+    pitot_pressure: (v) => `${(v / 100).toFixed(2)} Pa`,
+    pitot_temperature: (v) => `${(v / 100).toFixed(2)} K`,
+    pitot_airSpeed: (v) => `${(v / 100).toFixed(2)} m/s`,
+    learner_gains: (v) => (v / 10).toFixed(1),
+    // modular_drone_learning fork
+    quatSpPreFf: unitFloat,
+    d: unitFloat,
+    rpmCmd_f: unitFloat,
+    omegaSp: (v) => `${v.toFixed(0)} rad/s`,
+    rpmOmega_f: (v) => `${v.toFixed(0)} rad/s`,
     omega_dot: (v) => `${(v * 100).toFixed(0)} rad/s/s`,
     pos: (v) => `${(v / 1000).toFixed(3)} m`,
     posSp: (v) => `${(v / 1000).toFixed(3)} m`,
@@ -213,10 +244,10 @@ const INDIFLIGHT_FIELD_FORMATS = {
     accSp: (v) => `${(v / 100).toFixed(2)} m/s/s`,
     extTime: (v) => `${(v / 1000).toFixed(3)} ms`,
     ekf_acc_b: (v) => `${(v / 1000).toFixed(3)} m/s/s`,
-    ekf_gyro_b: (v) => `${(v / 1000).toFixed(3)} °/s`,
+    ekf_gyro_b: (v) => formatAngle(v / 1000, 3, "/s"),
     // legacy Euler attitude fields, logged in mrad
-    ekf_att: (v) => `${((v / 1000) * (180 / Math.PI)).toFixed(3)} °`,
-    extAtt: (v) => `${((v / 1000) * (180 / Math.PI)).toFixed(3)} °`,
+    ekf_att: (v) => formatAngle((v / 1000) * (180 / Math.PI), 3),
+    extAtt: (v) => formatAngle((v / 1000) * (180 / Math.PI), 3),
 };
 
 /**
@@ -226,11 +257,21 @@ const INDIFLIGHT_FIELD_FORMATS = {
  */
 function decodeIndiflightFieldToFriendly(fieldName, value) {
     const match = /^(\w+?)(?:\[(\d+)\])?$/.exec(fieldName);
-    const format = match && Object.hasOwn(INDIFLIGHT_FIELD_FORMATS, match[1]) && INDIFLIGHT_FIELD_FORMATS[match[1]];
-    if (!format || typeof value !== "number") {
+    if (!match || typeof value !== "number") {
         return undefined;
     }
-    return format(value, Number(match[2] ?? 0));
+    const name = match[1];
+    if (Object.hasOwn(INDIFLIGHT_FIELD_FORMATS, name)) {
+        return INDIFLIGHT_FIELD_FORMATS[name](value, Number(match[2] ?? 0));
+    }
+    // learner RLS diagnostics: motor_N_rls_*, fx_<axis>_rls_*
+    if (name.endsWith("_rls_lambda")) {
+        return (value / UNIT_FLOAT_TO_UNSIGNED16VB).toFixed(4);
+    }
+    if (name.endsWith("_rls_e_var")) {
+        return (value / (0.001 * 0xffff)).toExponential(3);
+    }
+    return undefined;
 }
 
 FlightLogFieldPresenter.presentFlags = function (flags, flagNames) {
@@ -353,19 +394,24 @@ FlightLogFieldPresenter.decodeFieldToFriendly = function (flightLog, fieldName, 
         case "gyroADCafterRpm[0]":
         case "gyroADCafterRpm[1]":
         case "gyroADCafterRpm[2]":
-            return `${flightLog
-                .gyroRawToDegreesPerSecond(value / highResolutionScale)
-                .toFixed(highResolutionAddPrecision)} °/s`;
+        case "gyroFf[0]":
+        case "gyroFf[1]":
+        case "gyroFf[2]":
+            return formatAngle(
+                flightLog.gyroRawToDegreesPerSecond(value / highResolutionScale),
+                highResolutionAddPrecision,
+                "/s",
+            );
 
         case "gyroADCs[0]":
         case "gyroADCs[1]":
         case "gyroADCs[2]":
-            return `${value.toFixed(0)} °/s`;
+            return formatAngle(value, 0, "/s");
 
         case "axisError[0]":
         case "axisError[1]":
         case "axisError[2]":
-            return `${(value / highResolutionScale).toFixed(highResolutionAddPrecision)} °/s`;
+            return formatAngle(value / highResolutionScale, highResolutionAddPrecision, "/s");
 
         case "rcCommand[0]":
         case "rcCommand[1]":
@@ -373,6 +419,13 @@ FlightLogFieldPresenter.decodeFieldToFriendly = function (flightLog, fieldName, 
             return `${(value / highResolutionScale + 1500).toFixed(highResolutionAddPrecision)} us`;
         case "rcCommand[3]":
             return `${(value / highResolutionScale).toFixed(highResolutionAddPrecision)} us`;
+
+        case "setpoint[0]":
+        case "setpoint[1]":
+        case "setpoint[2]":
+            return formatAngle(value / highResolutionScale, highResolutionAddPrecision, "/s");
+        case "setpoint[3]":
+            return `${(value / 10).toFixed(1)} %`;
 
         case "motor[0]":
         case "motor[1]":
@@ -398,7 +451,7 @@ FlightLogFieldPresenter.decodeFieldToFriendly = function (flightLog, fieldName, 
         case "rcCommands[0]":
         case "rcCommands[1]":
         case "rcCommands[2]":
-            return `${(value / highResolutionScale).toFixed(highResolutionAddPrecision)} °/s`;
+            return formatAngle(value / highResolutionScale, highResolutionAddPrecision, "/s");
         case "rcCommands[3]":
             return `${value.toFixed(1)}%`;
 
@@ -487,9 +540,10 @@ FlightLogFieldPresenter.decodeFieldToFriendly = function (flightLog, fieldName, 
         case "heading[0]":
         case "heading[1]":
         case "heading[2]":
-            return `${((value / Math.PI) * 180).toFixed(1)}°`;
+            return formatAngle((value / Math.PI) * 180, 1);
 
         case "baroAlt":
+        case "surfaceRaw":
             return FlightLogFieldPresenter.decodeCorrectAltitude(value / 100, userSettings.altitudeUnits);
 
         case "flightModeFlags":
@@ -527,7 +581,7 @@ FlightLogFieldPresenter.decodeFieldToFriendly = function (flightLog, fieldName, 
                     return `${(value / 100).toFixed(2)} m/s`;
             }
         case "GPS_ground_course":
-            return `${(value / 10).toFixed(1)} °`;
+            return formatAngle(value / 10, 1);
 
         case "GPS_velned[0]":
         case "GPS_velned[1]":
@@ -541,7 +595,7 @@ FlightLogFieldPresenter.decodeFieldToFriendly = function (flightLog, fieldName, 
             return `${value.toFixed(0)} m`;
         case "gpsHomeAzimuth":
         case "gpsTrajectoryTiltAngle":
-            return `${value.toFixed(1)} °`;
+            return formatAngle(value, 1);
         case "magADC[0]":
         case "magADC[1]":
         case "magADC[2]":

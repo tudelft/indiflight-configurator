@@ -92,6 +92,7 @@ export const defaultUserSettings = {
     legendUnits: true,
     speedUnits: 1,
     altitudeUnits: 1,
+    angleUnits: 1, // 1: degrees, 2: radians; value display only, graph min/max stay in degrees
     darkMode: 2,
     gapless: false,
     drawCraft: "3D",

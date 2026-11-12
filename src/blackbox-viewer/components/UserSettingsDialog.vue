@@ -100,6 +100,15 @@
                                 class="min-w-24"
                             />
                         </SettingRow>
+                        <SettingRow label="Angle units" help="Unit of angles and angular rates in the value displays">
+                            <USelect
+                                v-model="local.angleUnits"
+                                :items="angleOptions"
+                                :ui="{ content: 'z-[3002]' }"
+                                size="sm"
+                                class="min-w-24"
+                            />
+                        </SettingRow>
                     </UiBox>
                 </div>
 
@@ -295,6 +304,11 @@ const speedOptions = [
 const altitudeOptions = [
     { label: "meters", value: 1 },
     { label: "feet", value: 2 },
+];
+
+const angleOptions = [
+    { label: "degrees", value: 1 },
+    { label: "radians", value: 2 },
 ];
 
 // Overlay position rows — driven by local state so grid columns align

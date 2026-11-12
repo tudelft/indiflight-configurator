@@ -12,6 +12,7 @@ import {
     SUPER_EXPO_YAW,
     isBetaflightFamily,
     FIRMWARE_TYPE_CLEANFLIGHT,
+    FIRMWARE_TYPE_INDIFLIGHT,
 } from "./flightlog_fielddefs";
 import { IMU } from "./imu";
 import { useSettingsStore } from "./stores/settings.js";
@@ -1622,10 +1623,27 @@ FlightLog.prototype.ThrottleTorcCommandRaw = function (value) {
     );
 };
 
+/**
+ * Indiflight maps motor_normalized linearly onto [motorOutputLow, motorOutputHigh] (core.c) and logs exactly these
+ * endpoints in the motorOutput header, so they define 0 % and 100 %.
+ * @returns {[number, number] | null} null for other firmware or a missing/invalid header
+ */
+FlightLog.prototype.getIndiflightMotorOutputRange = function () {
+    const sysConfig = this.getSysConfig();
+    if (sysConfig.firmwareType !== FIRMWARE_TYPE_INDIFLIGHT) {
+        return null;
+    }
+    const [low, high] = sysConfig.motorOutput ?? [];
+    return Number.isFinite(low) && Number.isFinite(high) && high > low ? [low, high] : null;
+};
+
 FlightLog.prototype.rcMotorRawToPctPhysical = function (value) {
     // Motor displayed as percentage
     let motorPct;
-    if (this.isDigitalProtocol()) {
+    const indiflightRange = this.getIndiflightMotorOutputRange();
+    if (indiflightRange) {
+        motorPct = ((value - indiflightRange[0]) / (indiflightRange[1] - indiflightRange[0])) * 100;
+    } else if (this.isDigitalProtocol()) {
         motorPct = ((value - DSHOT_MIN_VALUE) / DSHOT_RANGE) * 100;
     } else {
         const MAX_ANALOG_VALUE = this.getSysConfig().maxthrottle;
@@ -1639,7 +1657,10 @@ FlightLog.prototype.rcMotorRawToPctPhysical = function (value) {
 FlightLog.prototype.PctPhysicalTorcMotorRaw = function (value) {
     // Motor displayed as percentage
     let motorRaw;
-    if (this.isDigitalProtocol()) {
+    const indiflightRange = this.getIndiflightMotorOutputRange();
+    if (indiflightRange) {
+        motorRaw = (value / 100) * (indiflightRange[1] - indiflightRange[0]) + indiflightRange[0];
+    } else if (this.isDigitalProtocol()) {
         motorRaw = (value / 100) * DSHOT_RANGE + DSHOT_MIN_VALUE;
     } else {
         const MAX_ANALOG_VALUE = this.getSysConfig().maxthrottle;
