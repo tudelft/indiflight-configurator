@@ -4332,6 +4332,202 @@
     "sdcardStatusUnknown": {
         "message": "Unknown state $1"
     },
+    "tabBlackboxLogs": {
+        "message": "Log Download",
+        "description": "Navigation sidebar label and title of the tab that downloads blackbox logs (SD card or onboard flash) over MSP"
+    },
+    "blackboxLogsNote": {
+        "message": "Download blackbox logs from the flight controller's SD card or onboard flash over the USB/serial connection. This is slower than mass storage mode, but needs no reboot and cannot corrupt an SD card if the flight controller is unplugged without ejecting. The craft must be disarmed and not logging."
+    },
+    "blackboxLogsNotSupported": {
+        "message": "This flight controller has neither an SD card slot nor onboard flash for blackbox logs."
+    },
+    "blackboxLogsCardFatal": {
+        "message": "SD card error. Reboot the flight controller to retry."
+    },
+    "blackboxLogsFilesTitle": {
+        "message": "Log files"
+    },
+    "blackboxLogsStorage": {
+        "message": "Source: {{storage}}",
+        "description": "Where the listed logs are stored; storage is blackboxLogsStorageSdcard or blackboxLogsStorageFlash"
+    },
+    "blackboxLogsStorageUsage": {
+        "message": "{{used}} of {{total}} used"
+    },
+    "blackboxLogsStorageSdcard": {
+        "message": "SD card",
+        "description": "Used inside other sentences, e.g. 'All logs on the SD card will be deleted'"
+    },
+    "blackboxLogsStorageFlash": {
+        "message": "onboard flash",
+        "description": "Used inside other sentences, e.g. 'All logs on the onboard flash will be deleted'"
+    },
+    "blackboxLogsStorageUnknown": {
+        "message": "log storage",
+        "description": "Used inside other sentences when it is not yet known whether logs are on the SD card or flash"
+    },
+    "blackboxLogsFlashNote": {
+        "message": "Logs on onboard flash have no date, and the last log may be incomplete if logging was interrupted."
+    },
+    "blackboxLogsScanning": {
+        "message": "Scanning flash for logs… {{progress}}%"
+    },
+    "blackboxLogsColumnName": {
+        "message": "File"
+    },
+    "blackboxLogsColumnSize": {
+        "message": "Size"
+    },
+    "blackboxLogsColumnDate": {
+        "message": "Date"
+    },
+    "blackboxLogsColumnStatus": {
+        "message": "Status"
+    },
+    "blackboxLogsDateUnknown": {
+        "message": "—",
+        "description": "Shown instead of a date when the log has no valid timestamp (flash logs, or the flight controller had no clock time)"
+    },
+    "blackboxLogsRefresh": {
+        "message": "Refresh"
+    },
+    "blackboxLogsSelectAll": {
+        "message": "Select all"
+    },
+    "blackboxLogsSelectFile": {
+        "message": "Select {{name}}",
+        "description": "Accessible label of the checkbox in front of each log file"
+    },
+    "blackboxLogsSelectedSummary": {
+        "message": "{{count}} of {{total}} files selected ({{size}})"
+    },
+    "blackboxLogsDownload": {
+        "message": "Download selected"
+    },
+    "blackboxLogsCancel": {
+        "message": "Cancel download"
+    },
+    "blackboxLogsProgressTitle": {
+        "message": "Download progress"
+    },
+    "blackboxLogsProgressFile": {
+        "message": "File {{index}} of {{count}}: {{name}}"
+    },
+    "blackboxLogsProgressOverall": {
+        "message": "All selected files"
+    },
+    "blackboxLogsProgressBytes": {
+        "message": "{{done}} of {{total}}"
+    },
+    "blackboxLogsProgressRate": {
+        "message": "{{rate}}/s",
+        "description": "Download speed, e.g. '120.500 KB/s'"
+    },
+    "blackboxLogsNotListed": {
+        "message": "Press Refresh to list the logs."
+    },
+    "blackboxLogsNoFiles": {
+        "message": "No logs found."
+    },
+    "blackboxLogsUnsupported": {
+        "message": "Firmware does not support log download over MSP. Update the firmware, or use mass storage mode in the Blackbox tab."
+    },
+    "blackboxLogsStatusNotReady": {
+        "message": "Log storage (SD card or flash) not present or not ready."
+    },
+    "blackboxLogsStatusBusy": {
+        "message": "The flight controller is busy: it is armed, blackbox is logging, or logs are being deleted. Try again later."
+    },
+    "blackboxLogsStatusIoError": {
+        "message": "Read error on the log storage."
+    },
+    "blackboxLogsStatusNotFound": {
+        "message": "Log not found. Refresh the list."
+    },
+    "blackboxLogsStatusBadRequest": {
+        "message": "The flight controller rejected the request."
+    },
+    "blackboxLogsStatusInProgress": {
+        "message": "The flight controller is still scanning its flash. Try again shortly."
+    },
+    "blackboxLogsStatusUnknown": {
+        "message": "The flight controller returned unknown status {{status}}."
+    },
+    "blackboxLogsTooManyRetries": {
+        "message": "Too many communication errors, aborted."
+    },
+    "blackboxLogsInterrupted": {
+        "message": "Interrupted (connection lost or tab closed)."
+    },
+    "blackboxLogsCancelled": {
+        "message": "Download cancelled."
+    },
+    "blackboxLogsError": {
+        "message": "Error: {{errorMessage}}"
+    },
+    "blackboxLogsSaveLocationFailed": {
+        "message": "Could not open the save location: {{errorMessage}}"
+    },
+    "blackboxLogsDownloadDone": {
+        "message": "Downloaded {{count}} file(s), all sizes verified."
+    },
+    "blackboxLogsDownloadIncomplete": {
+        "message": "Download finished with problems. Size mismatch (file kept): {{mismatched}}. Failed: {{failed}}."
+    },
+    "blackboxLogsStateQueued": {
+        "message": "Queued"
+    },
+    "blackboxLogsStateDownloading": {
+        "message": "Downloading"
+    },
+    "blackboxLogsStateDone": {
+        "message": "Done"
+    },
+    "blackboxLogsStateMismatch": {
+        "message": "Size mismatch: received {{received}} bytes",
+        "description": "Shown when the number of downloaded bytes differs from the size listed by the flight controller"
+    },
+    "blackboxLogsStateFailed": {
+        "message": "Failed"
+    },
+    "blackboxLogsStateCancelled": {
+        "message": "Cancelled"
+    },
+    "blackboxLogsEraseAll": {
+        "message": "Delete all logs"
+    },
+    "blackboxLogsEraseConfirmTitle": {
+        "message": "Delete all logs?"
+    },
+    "blackboxLogsEraseConfirmText": {
+        "message": "All logs on the {{storage}} will be permanently deleted. This cannot be undone.",
+        "description": "storage is blackboxLogsStorageSdcard, blackboxLogsStorageFlash or blackboxLogsStorageUnknown"
+    },
+    "blackboxLogsEraseConfirmOk": {
+        "message": "Delete all logs"
+    },
+    "blackboxLogsEraseConfirmCancel": {
+        "message": "Cancel"
+    },
+    "blackboxLogsEraseProgressTitle": {
+        "message": "Deleting logs"
+    },
+    "blackboxLogsErasing": {
+        "message": "Deleting all logs on the {{storage}}…"
+    },
+    "blackboxLogsEraseKeepOpen": {
+        "message": "Keep the app connected and stay on this tab until deleting has finished. On an SD card, deleting stops (and the remaining logs are kept) if the app stops asking for progress. Erasing a large flash chip can take a minute or two."
+    },
+    "blackboxLogsEraseDone": {
+        "message": "All logs deleted."
+    },
+    "blackboxLogsEraseBusy": {
+        "message": "Cannot delete logs: the flight controller is armed or blackbox is logging."
+    },
+    "blackboxLogsEraseIoError": {
+        "message": "Deleting failed: storage I/O error, or deleting was abandoned. Some logs may remain."
+    },
     "firmwareFlasherPleaseWait": {
         "message": "Please wait"
     },

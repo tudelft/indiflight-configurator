@@ -144,3 +144,75 @@ describe("FileSystem fallback (no File System Access API)", () => {
         }
     });
 });
+
+describe("FileSystem directory saving", () => {
+    function fakeDirectory(existing) {
+        const names = new Set(existing);
+        const notFound = () => Object.assign(new Error("missing"), { name: "NotFoundError" });
+        return {
+            names,
+            getFileHandle: vi.fn(async (name, options) => {
+                if (!names.has(name) && !options?.create) {
+                    throw notFound();
+                }
+                names.add(name);
+                return { name };
+            }),
+            removeEntry: vi.fn(async (name) => names.delete(name)),
+        };
+    }
+
+    afterEach(() => {
+        delete globalThis.showDirectoryPicker;
+    });
+
+    it("reports directory picking only where showDirectoryPicker exists", async () => {
+        expect(FileSystem.canPickSaveDirectory()).toBe(false);
+        const dirHandle = fakeDirectory([]);
+        globalThis.showDirectoryPicker = vi.fn().mockResolvedValue(dirHandle);
+        expect(FileSystem.canPickSaveDirectory()).toBe(true);
+        await expect(FileSystem.pickSaveDirectory()).resolves.toMatchObject({ _dirHandle: dirHandle });
+        expect(globalThis.showDirectoryPicker).toHaveBeenCalledWith({ mode: "readwrite" });
+    });
+
+    it("creates files with their own name and never overwrites existing ones", async () => {
+        const dirHandle = fakeDirectory(["LOG00001.BFL", "LOG00001 (1).BFL"]);
+        const directory = { name: "logs", _dirHandle: dirHandle };
+
+        const fresh = await FileSystem.createFileInDirectory(directory, "LOG00002.BFL");
+        expect(fresh.name).toBe("LOG00002.BFL");
+
+        const renamed = await FileSystem.createFileInDirectory(directory, "LOG00001.BFL");
+        expect(renamed.name).toBe("LOG00001 (2).BFL");
+        expect(dirHandle.getFileHandle).toHaveBeenLastCalledWith("LOG00001 (2).BFL", { create: true });
+    });
+
+    it("abortFile discards the writable and removes a file created in a directory", async () => {
+        const dirHandle = fakeDirectory([]);
+        const file = await FileSystem.createFileInDirectory({ _dirHandle: dirHandle }, "LOG00003.BFL");
+        const writable = { abort: vi.fn().mockResolvedValue(), close: vi.fn() };
+
+        await FileSystem.abortFile(writable, file);
+
+        expect(writable.abort).toHaveBeenCalled();
+        expect(writable.close).not.toHaveBeenCalled();
+        expect(dirHandle.removeEntry).toHaveBeenCalledWith("LOG00003.BFL");
+        expect(dirHandle.names.has("LOG00003.BFL")).toBe(false);
+    });
+
+    it("abortFile drops buffered chunks of the download fallback without downloading", async () => {
+        const target = FileSystem._fallbackPickSaveFile("LOG00004.BFL", ".BFL");
+        const writable = await FileSystem.openFile(target);
+        await FileSystem.writeChunck(writable, new Blob([new Uint8Array([1, 2, 3])]));
+        const createObjectURL = vi.fn();
+        const original = URL.createObjectURL;
+        URL.createObjectURL = createObjectURL;
+        try {
+            await FileSystem.abortFile(writable, target);
+        } finally {
+            URL.createObjectURL = original;
+        }
+        expect(writable.chunks).toEqual([]);
+        expect(createObjectURL).not.toHaveBeenCalled();
+    });
+});

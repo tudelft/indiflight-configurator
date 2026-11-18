@@ -1,0 +1,332 @@
+<template>
+    <BaseTab tab-name="blackbox_logs">
+        <div class="content_wrapper">
+            <div class="tab_title">{{ $t("tabBlackboxLogs") }}</div>
+            <UiBox highlight class="mb-3">
+                <p>{{ $t("blackboxLogsNote") }}</p>
+            </UiBox>
+
+            <div class="flex flex-col gap-2">
+                <UAlert
+                    v-if="storageIssueKey && !downloading && !erasing && !message"
+                    color="warning"
+                    variant="subtle"
+                    icon="i-lucide-alert-triangle"
+                    :description="$t(storageIssueKey)"
+                />
+                <UAlert
+                    v-if="message"
+                    :color="alertColor"
+                    variant="subtle"
+                    :icon="alertIcon"
+                    :description="$t(message.key, message.params ?? {})"
+                />
+            </div>
+
+            <UiBox v-if="erasing" :title="$t('blackboxLogsEraseProgressTitle')" class="mt-4">
+                <UAlert
+                    color="warning"
+                    variant="subtle"
+                    icon="i-lucide-alert-triangle"
+                    :description="$t('blackboxLogsEraseKeepOpen')"
+                />
+                <div class="flex justify-between gap-2 text-sm">
+                    <span>{{ $t("blackboxLogsErasing", { storage: storageLabel }) }}</span>
+                    <span v-if="eraseProgress !== null" class="text-muted">{{ eraseProgress }}%</span>
+                </div>
+                <UProgress :model-value="eraseProgress" :max="100" color="error" />
+            </UiBox>
+
+            <UiBox v-if="progress" :title="$t('blackboxLogsProgressTitle')" class="mt-4">
+                <div class="flex flex-col gap-1">
+                    <div class="flex justify-between gap-2 text-sm">
+                        <span>
+                            {{
+                                $t("blackboxLogsProgressFile", {
+                                    index: progress.fileIndex + 1,
+                                    count: progress.fileCount,
+                                    name: progress.fileName,
+                                })
+                            }}
+                        </span>
+                        <span class="text-muted">
+                            {{
+                                $t("blackboxLogsProgressBytes", {
+                                    done: bytesToSize(progress.fileBytes),
+                                    total: bytesToSize(progress.fileSize),
+                                })
+                            }}
+                        </span>
+                    </div>
+                    <UProgress :model-value="percent(progress.fileBytes, progress.fileSize)" :max="100" />
+                </div>
+                <div v-if="progress.fileCount > 1" class="flex flex-col gap-1">
+                    <div class="flex justify-between gap-2 text-sm">
+                        <span>{{ $t("blackboxLogsProgressOverall") }}</span>
+                        <span class="text-muted">
+                            {{
+                                $t("blackboxLogsProgressBytes", {
+                                    done: bytesToSize(progress.doneBytes),
+                                    total: bytesToSize(progress.totalBytes),
+                                })
+                            }}
+                        </span>
+                    </div>
+                    <UProgress :model-value="percent(progress.doneBytes, progress.totalBytes)" :max="100" />
+                </div>
+                <div class="flex items-center justify-between gap-2">
+                    <span class="text-sm text-muted">
+                        {{ $t("blackboxLogsProgressRate", { rate: bytesToSize(Math.round(progress.rate)) }) }}
+                    </span>
+                    <UButton
+                        color="error"
+                        variant="soft"
+                        icon="i-lucide-x"
+                        :label="$t('blackboxLogsCancel')"
+                        @click="cancel"
+                    />
+                </div>
+            </UiBox>
+
+            <UiBox :title="$t('blackboxLogsFilesTitle')" class="mt-4">
+                <div v-if="storage" class="flex flex-wrap items-center gap-2 text-sm">
+                    <UIcon :name="storage === 'flash' ? 'i-lucide-cpu' : 'i-lucide-hard-drive'" class="size-4" />
+                    <span class="font-semibold">{{ $t("blackboxLogsStorage", { storage: storageLabel }) }}</span>
+                    <span v-if="storageUsage" class="text-muted">
+                        {{
+                            $t("blackboxLogsStorageUsage", {
+                                used: bytesToSize(storageUsage.used),
+                                total: bytesToSize(storageUsage.total),
+                            })
+                        }}
+                    </span>
+                </div>
+                <p v-if="storage === 'flash'" class="text-sm text-muted">{{ $t("blackboxLogsFlashNote") }}</p>
+                <div v-if="scanProgress !== null" class="flex flex-col gap-1">
+                    <span class="text-sm">{{ $t("blackboxLogsScanning", { progress: scanProgress }) }}</span>
+                    <UProgress :model-value="scanProgress" :max="100" />
+                </div>
+                <div class="flex flex-wrap items-center gap-3">
+                    <UCheckbox
+                        :model-value="selectAllState"
+                        :disabled="busy || files.length === 0"
+                        :label="$t('blackboxLogsSelectAll')"
+                        @update:model-value="setAllSelected(!!$event)"
+                    />
+                    <span class="text-sm text-muted">
+                        {{
+                            $t("blackboxLogsSelectedSummary", {
+                                count: selectedFiles.length,
+                                total: files.length,
+                                size: bytesToSize(selectedBytes),
+                            })
+                        }}
+                    </span>
+                </div>
+                <UTable
+                    :data="files"
+                    :columns="columns"
+                    :loading="listing"
+                    :empty="listed ? $t('blackboxLogsNoFiles') : $t('blackboxLogsNotListed')"
+                    :ui="{ th: 'text-xs', td: 'py-1 text-sm' }"
+                >
+                    <template #select-cell="{ row }">
+                        <UCheckbox
+                            :model-value="selectedNames.includes(row.original.name)"
+                            :disabled="busy"
+                            :aria-label="$t('blackboxLogsSelectFile', { name: row.original.name })"
+                            @update:model-value="setSelected(row.original.name, !!$event)"
+                        />
+                    </template>
+                    <template #name-cell="{ row }">
+                        <span class="font-mono">{{ row.original.name }}</span>
+                    </template>
+                    <template #size-cell="{ row }">
+                        <span :title="`${row.original.size} B`">{{ bytesToSize(row.original.size) }}</span>
+                    </template>
+                    <template #timestamp-cell="{ row }">
+                        <span v-if="row.original.timestamp">{{ formatTimestamp(row.original.timestamp) }}</span>
+                        <span v-else class="text-dimmed">{{ $t("blackboxLogsDateUnknown") }}</span>
+                    </template>
+                    <template #state-cell="{ row }">
+                        <span v-if="results[row.original.name]" :class="stateClass(results[row.original.name].state)">
+                            {{ stateLabel(results[row.original.name]) }}
+                        </span>
+                    </template>
+                </UTable>
+            </UiBox>
+        </div>
+
+        <UModal
+            :open="confirmEraseOpen"
+            :title="$t('blackboxLogsEraseConfirmTitle')"
+            :ui="{ content: 'w-[36rem] max-w-[calc(100vw-2rem)]' }"
+            @update:open="confirmEraseOpen = $event"
+        >
+            <template #body>
+                <p>{{ $t("blackboxLogsEraseConfirmText", { storage: storageLabel }) }}</p>
+            </template>
+            <template #footer>
+                <div class="flex w-full justify-end gap-2">
+                    <UButton
+                        variant="outline"
+                        color="neutral"
+                        :label="$t('blackboxLogsEraseConfirmCancel')"
+                        @click="confirmEraseOpen = false"
+                    />
+                    <UButton
+                        color="error"
+                        icon="i-lucide-trash-2"
+                        :label="$t('blackboxLogsEraseConfirmOk')"
+                        @click="confirmErase"
+                    />
+                </div>
+            </template>
+        </UModal>
+
+        <div class="content_toolbar toolbar_fixed_bottom flex items-center gap-2">
+            <UButton
+                variant="soft"
+                icon="i-lucide-refresh-cw"
+                :label="$t('blackboxLogsRefresh')"
+                :loading="listing"
+                :disabled="busy"
+                @click="refresh"
+            />
+            <UButton
+                color="error"
+                variant="soft"
+                icon="i-lucide-trash-2"
+                :label="$t('blackboxLogsEraseAll')"
+                :loading="erasing"
+                :disabled="busy || !storage || unsupported"
+                @click="confirmEraseOpen = true"
+            />
+            <UButton
+                icon="i-lucide-download"
+                :label="$t('blackboxLogsDownload')"
+                :loading="downloading"
+                :disabled="busy || selectedFiles.length === 0"
+                @click="downloadSelected"
+            />
+        </div>
+    </BaseTab>
+</template>
+
+<script setup>
+import { computed, onMounted, onUnmounted, ref } from "vue";
+import { useTranslation } from "i18next-vue";
+import BaseTab from "./BaseTab.vue";
+import UiBox from "@/components/elements/UiBox.vue";
+import GUI from "@/js/gui";
+import { bytesToSize } from "@/js/utils/common";
+import { useBlackboxLogs } from "@/composables/useBlackboxLogs";
+
+const { t } = useTranslation();
+const {
+    files,
+    selectedNames,
+    selectedFiles,
+    allSelected,
+    listing,
+    listed,
+    scanProgress,
+    downloading,
+    erasing,
+    eraseProgress,
+    busy,
+    unsupported,
+    storage,
+    storageUsage,
+    message,
+    results,
+    progress,
+    storageIssueKey,
+    setSelected,
+    setAllSelected,
+    refresh,
+    downloadSelected,
+    eraseAll,
+    load,
+    cancel,
+    dispose,
+} = useBlackboxLogs();
+
+const confirmEraseOpen = ref(false);
+
+function confirmErase() {
+    confirmEraseOpen.value = false;
+    eraseAll();
+}
+
+const storageLabel = computed(() => {
+    if (storage.value === "flash") {
+        return t("blackboxLogsStorageFlash");
+    }
+    return storage.value === "sdcard" ? t("blackboxLogsStorageSdcard") : t("blackboxLogsStorageUnknown");
+});
+
+const columns = computed(() => [
+    { id: "select", header: "" },
+    { accessorKey: "name", header: t("blackboxLogsColumnName") },
+    { accessorKey: "size", header: t("blackboxLogsColumnSize") },
+    { accessorKey: "timestamp", header: t("blackboxLogsColumnDate") },
+    { id: "state", header: t("blackboxLogsColumnStatus") },
+]);
+
+const selectAllState = computed(() => {
+    if (allSelected.value) {
+        return true;
+    }
+    return selectedFiles.value.length > 0 ? "indeterminate" : false;
+});
+
+const selectedBytes = computed(() => selectedFiles.value.reduce((sum, f) => sum + f.size, 0));
+
+const ALERT_STYLE = {
+    success: { color: "success", icon: "i-lucide-check-circle" },
+    warning: { color: "warning", icon: "i-lucide-alert-triangle" },
+    error: { color: "error", icon: "i-lucide-circle-x" },
+    info: { color: "info", icon: "i-lucide-info" },
+};
+const alertColor = computed(() => ALERT_STYLE[message.value?.type]?.color ?? "info");
+const alertIcon = computed(() => ALERT_STYLE[message.value?.type]?.icon ?? "i-lucide-info");
+
+const STATE_STYLE = {
+    queued: { key: "blackboxLogsStateQueued", class: "text-dimmed" },
+    downloading: { key: "blackboxLogsStateDownloading", class: "text-primary" },
+    done: { key: "blackboxLogsStateDone", class: "text-success" },
+    mismatch: { key: "blackboxLogsStateMismatch", class: "text-warning" },
+    failed: { key: "blackboxLogsStateFailed", class: "text-error" },
+    cancelled: { key: "blackboxLogsStateCancelled", class: "text-dimmed" },
+};
+
+function stateLabel(result) {
+    return t(STATE_STYLE[result.state]?.key ?? "blackboxLogsStateFailed", { received: result.received });
+}
+
+function stateClass(state) {
+    return STATE_STYLE[state]?.class ?? "";
+}
+
+function percent(done, total) {
+    return total > 0 ? Math.min(100, (done / total) * 100) : 0;
+}
+
+const pad = (n) => String(n).padStart(2, "0");
+function formatTimestamp(ts) {
+    return `${ts.year}-${pad(ts.month)}-${pad(ts.day)} ${pad(ts.hours)}:${pad(ts.minutes)}:${pad(ts.seconds)}`;
+}
+
+onMounted(async () => {
+    try {
+        await load();
+    } finally {
+        GUI.content_ready();
+    }
+});
+
+onUnmounted(() => {
+    dispose();
+});
+</script>
