@@ -7,6 +7,7 @@ import LoggingTab from "../components/tabs/LoggingTab.vue";
 import GpsTab from "../components/tabs/GpsTab.vue";
 import AuxiliaryTab from "../components/tabs/AuxiliaryTab.vue";
 import OnboardLoggingTab from "../components/tabs/OnboardLoggingTab.vue";
+import BlackboxLogsTab from "../components/tabs/BlackboxLogsTab.vue";
 import FirmwareFlasherTab from "../components/tabs/FirmwareFlasherTab.vue";
 import AdjustmentsTab from "../components/tabs/AdjustmentsTab.vue";
 import CliTab from "../components/tabs/CliTab.vue";
@@ -37,6 +38,7 @@ export const VueTabComponents = {
     gps: GpsTab,
     auxiliary: AuxiliaryTab,
     onboard_logging: OnboardLoggingTab,
+    blackbox_logs: BlackboxLogsTab,
     firmware_flasher: FirmwareFlasherTab,
     adjustments: AdjustmentsTab,
     cli: CliTab,

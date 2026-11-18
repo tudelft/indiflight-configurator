@@ -38,6 +38,13 @@ export const sidebarItems = [
     },
     { key: "logging", mode: "connected", i18n: "tabLogging", icon: "i-lucide-file-text", expert: true },
     { key: "onboard_logging", mode: "connected", i18n: "tabOnboardLogging", icon: "i-lucide-database" },
+    {
+        key: "blackbox_logs",
+        mode: "connected",
+        i18n: "tabBlackboxLogs",
+        icon: "i-lucide-hard-drive-download",
+        requiresLogStorage: true,
+    },
     { key: "autotune", mode: "shared", i18n: "tabAutotune", icon: "i-lucide-gauge", expert: true },
     { key: "blackbox_viewer", mode: "shared", i18n: "tabBlackboxViewer", icon: "i-lucide-line-chart" },
     { key: "flight_plotter", mode: "shared", i18n: "tabFlightPlotter", icon: "i-lucide-activity" },
@@ -47,6 +54,14 @@ export const sidebarItems = [
     { key: "log", mode: "shared", i18n: "tabLog", icon: "i-lucide-file-text", expert: true, hideInSidebar: true },
 ];
 
+/**
+ * Whether the FC has blackbox log storage the log download tab can read: an SD card slot (MSP_SDCARD_SUMMARY) or
+ * onboard flash (MSP_DATAFLASH_SUMMARY).
+ */
+export function hasLogStorage(fc) {
+    return Boolean(fc?.SDCARD?.supported || fc?.DATAFLASH?.supported);
+}
+
 export function isItemVisible(item, ctx) {
     if (item.expert && !ctx.expertMode) {
         return false;
@@ -55,6 +70,9 @@ export function isItemVisible(item, ctx) {
         return false;
     }
     if (item.feature && !ctx.features?.isEnabled?.(item.feature)) {
+        return false;
+    }
+    if (item.requiresLogStorage && !ctx.logStorageSupported) {
         return false;
     }
     return true;

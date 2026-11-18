@@ -96,6 +96,16 @@ function canUseSavePicker() {
     return typeof globalThis.showSaveFilePicker === "function";
 }
 
+function canUseDirectoryPicker() {
+    return typeof globalThis.showDirectoryPicker === "function";
+}
+
+// "LOG00001.BFL" -> "LOG00001 (2).BFL"
+function numberedName(name, n) {
+    const dot = name.lastIndexOf(".");
+    return dot > 0 ? `${name.slice(0, dot)} (${n})${name.slice(dot)}` : `${name} (${n})`;
+}
+
 // Open a file via a hidden <input type=file> and resolve with the selected File
 // (or reject with an AbortError when the dialog is dismissed, mirroring
 // showOpenFilePicker).
@@ -255,6 +265,42 @@ class FileSystem {
             name: result.name,
             _fileHandle: result.fileId,
         };
+    }
+
+    // ---------------------------------------------------------------
+    // pickSaveDirectory  (File System Access API only)
+    // ---------------------------------------------------------------
+
+    /** True when pickSaveDirectory is usable (Chromium / WebView2, not Android or WebKit webviews). */
+    canPickSaveDirectory() {
+        return !isAndroid() && canUseDirectoryPicker();
+    }
+
+    async pickSaveDirectory() {
+        const dirHandle = await globalThis.showDirectoryPicker({ mode: "readwrite" });
+        return { name: dirHandle.name, _dirHandle: dirHandle };
+    }
+
+    /**
+     * Create a new file in a directory from pickSaveDirectory, never overwriting: an existing name gets a " (n)"
+     * suffix. The result can be used with openFile / writeFile like a pickSaveFile result.
+     */
+    async createFileInDirectory(directory, name) {
+        const dirHandle = directory._dirHandle;
+        let candidate = name;
+        for (let n = 1; ; n++) {
+            try {
+                await dirHandle.getFileHandle(candidate);
+            } catch (error) {
+                if (error?.name !== "NotFoundError") {
+                    throw error;
+                }
+                break;
+            }
+            candidate = numberedName(name, n);
+        }
+        const fileHandle = await dirHandle.getFileHandle(candidate, { create: true });
+        return { ...this._createFile(fileHandle), _parentDirHandle: dirHandle };
     }
 
     // ---------------------------------------------------------------
@@ -481,6 +527,34 @@ class FileSystem {
         }
 
         await writable.close();
+    }
+
+    // ---------------------------------------------------------------
+    // abortFile  (streaming — discards what was written, where possible)
+    // ---------------------------------------------------------------
+
+    async abortFile(writable, file) {
+        if (isAndroid()) {
+            // SAF documents cannot be discarded from here; keep the partial file.
+            await CapacitorFile.closeFile(writable);
+            return;
+        }
+
+        if (Array.isArray(writable?.chunks)) {
+            writable.chunks = [];
+            return;
+        }
+
+        if (typeof writable?.abort === "function") {
+            await writable.abort();
+        } else {
+            await writable?.close();
+        }
+
+        if (file?._parentDirHandle) {
+            // The file was created by createFileInDirectory, so it held nothing before.
+            await file._parentDirHandle.removeEntry(file.name).catch(() => {});
+        }
     }
 
     // ---------------------------------------------------------------

@@ -200,6 +200,13 @@ const MSPCodes = {
     MSP2_SENSOR_CONFIG_ACTIVE: 0x300a,
     MSP2_MCU_INFO: 0x300c,
     MSP2_GYRO_SENSOR: 0x300d,
+
+    // MSPv2 Indiflight specific (msp_protocol_v2_indiflight.h)
+    MSP2_INDI_BLACKBOX_LOG_LIST: 0x4006,
+    MSP2_INDI_BLACKBOX_LOG_READ: 0x4007,
+    MSP2_INDI_BLACKBOX_LOG_CLOSE: 0x4008,
+    MSP2_INDI_BLACKBOX_LOG_ERASE_ALL: 0x4009,
+
     // MSP2_GET_TEXT and MSP2_SET_TEXT variable types
     PILOT_NAME: 1,
     CRAFT_NAME: 2,

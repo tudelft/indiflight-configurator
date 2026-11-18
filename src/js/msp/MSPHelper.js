@@ -10,8 +10,16 @@ import MSPCodes from "./MSPCodes";
 import { MspCrcError } from "./mspErrors";
 import { API_VERSION_1_45, API_VERSION_1_46, API_VERSION_1_47, API_VERSION_1_48 } from "../data_storage";
 import EscProtocols from "../utils/EscProtocols";
-import huffmanDecodeBuf from "../huffman";
-import { defaultHuffmanTree, defaultHuffmanLenIndex } from "../default_huffman_tree";
+import {
+    BLACKBOX_LOG_STATUS,
+    decodeDataflashReadReply,
+    decodeBlackboxLogEraseReply,
+    decodeBlackboxLogListReply,
+    decodeBlackboxLogReadReply,
+    encodeBlackboxLogEraseRequest,
+    encodeBlackboxLogListRequest,
+    encodeBlackboxLogReadRequest,
+} from "./blackboxLogProtocol";
 import { updateTabList } from "../utils/updateTabList";
 import { showErrorDialog } from "../utils/showErrorDialog";
 import GUI, { TABS } from "../gui";
@@ -1522,6 +1530,12 @@ MspHelper.prototype.process_data = function (dataHandler) {
                 case MSPCodes.MSP_DATAFLASH_READ:
                     // No-op, let callback handle it
                     break;
+                case MSPCodes.MSP2_INDI_BLACKBOX_LOG_LIST:
+                case MSPCodes.MSP2_INDI_BLACKBOX_LOG_READ:
+                case MSPCodes.MSP2_INDI_BLACKBOX_LOG_CLOSE:
+                case MSPCodes.MSP2_INDI_BLACKBOX_LOG_ERASE_ALL:
+                    // No-op, decoded by the blackboxLog* helpers
+                    break;
                 case MSPCodes.MSP_DATAFLASH_ERASE:
                     console.log("Data flash erase begun...");
                     break;
@@ -2560,53 +2574,17 @@ MspHelper.prototype.dataflashRead = function (address, blockSize, onDataCallback
 
     MSP.promise(MSPCodes.MSP_DATAFLASH_READ, outData).then(
         (response) => {
-            const chunkAddress = response.data.readU32();
+            const chunk = decodeDataflashReadReply(response.data, 0, address);
 
-            const headerSize = 7;
-            const dataSize = response.data.readU16();
-            const dataCompressionType = response.data.readU8();
-
-            // Verify that the address of the memory returned matches what the caller asked for
-            if (chunkAddress == address) {
-                /* Strip that address off the front of the reply and deliver it separately so the caller doesn't have to
-                 * figure out the reply format:
-                 */
-                if (dataCompressionType == 0) {
-                    onDataCallback(
-                        address,
-                        new DataView(response.data.buffer, response.data.byteOffset + headerSize, dataSize),
-                    );
-                } else if (dataCompressionType == 1) {
-                    // Read compressed char count to avoid decoding stray bit sequences as bytes
-                    const compressedCharCount = response.data.readU16();
-
-                    // Compressed format uses 2 additional bytes as a pseudo-header to denote the number of uncompressed bytes
-                    const compressedArray = new Uint8Array(
-                        response.data.buffer,
-                        response.data.byteOffset + headerSize + 2,
-                        dataSize - 2,
-                    );
-                    const decompressedArray = huffmanDecodeBuf(
-                        compressedArray,
-                        compressedCharCount,
-                        defaultHuffmanTree,
-                        defaultHuffmanLenIndex,
-                    );
-
-                    onDataCallback(address, new DataView(decompressedArray.buffer), dataSize);
-                } else {
-                    console.error(`Unknown dataflash compression type ${dataCompressionType}`);
-                    onDataCallback(
-                        address,
-                        null,
-                        null,
-                        new Error(`Unknown dataflash compression type ${dataCompressionType}`),
-                    );
-                }
-            } else {
-                // Report address error
-                console.log(`Expected address ${address} but received ${chunkAddress} - retrying`);
+            if (chunk.retry) {
+                // Verify that the address of the memory returned matches what the caller asked for
+                console.log(`Expected address ${address} but received ${chunk.address} - retrying`);
                 onDataCallback(address, null); // returning null to the callback forces a retry
+            } else if (chunk.error) {
+                console.error(chunk.error.message);
+                onDataCallback(address, null, null, chunk.error);
+            } else {
+                onDataCallback(address, chunk.data, chunk.bytesCompressed);
             }
         },
         (error) => {
@@ -2620,6 +2598,97 @@ MspHelper.prototype.dataflashRead = function (address, blockSize, onDataCallback
             }
         },
     );
+};
+
+/**
+ * Fetch one page of the blackbox log listing (SD card or onboard flash, as chosen by the FC).
+ *
+ * @param {number} startIndex
+ * @returns {Promise<{unsupported: true}|ReturnType<typeof decodeBlackboxLogListReply>>}
+ * @throws {MspTimeoutError|MspCancelledError|MspCrcError|Error}
+ */
+MspHelper.prototype.blackboxLogList = async function (startIndex) {
+    const response = await MSP.promise(MSPCodes.MSP2_INDI_BLACKBOX_LOG_LIST, encodeBlackboxLogListRequest(startIndex));
+    if (response?.unsupported) {
+        return { unsupported: true };
+    }
+    if (!response) {
+        throw new Error("No response to blackbox log list request");
+    }
+    return decodeBlackboxLogListReply(response.data);
+};
+
+/**
+ * Read one chunk of a blackbox log file. Mirrors dataflashRead: a CRC error or an offset mismatch resolves with
+ * `retry: true` so the caller re-requests the same offset.
+ *
+ * @param {string} name
+ * @param {number} offset
+ * @param {number} blockSize
+ * @returns {Promise<{unsupported: true}|ReturnType<typeof decodeBlackboxLogReadReply>>}
+ * @throws {MspTimeoutError|MspCancelledError|Error} on timeout, cancellation or an undecodable reply
+ */
+MspHelper.prototype.blackboxLogRead = async function (name, offset, blockSize) {
+    let response;
+    try {
+        response = await MSP.promise(
+            MSPCodes.MSP2_INDI_BLACKBOX_LOG_READ,
+            encodeBlackboxLogReadRequest(name, offset, blockSize, true),
+        );
+    } catch (error) {
+        if (error instanceof MspCrcError) {
+            console.log(`CRC error for ${name} at offset ${offset} - retrying`);
+            return { status: BLACKBOX_LOG_STATUS.OK, address: null, data: null, retry: true, error: null };
+        }
+        throw error;
+    }
+    if (response?.unsupported) {
+        return { unsupported: true };
+    }
+    if (!response) {
+        throw new Error("No response to blackbox log read request");
+    }
+
+    const reply = decodeBlackboxLogReadReply(response.data, offset);
+    if (reply.error) {
+        throw reply.error;
+    }
+    if (reply.retry) {
+        console.log(`Expected offset ${offset} of ${name} but received ${reply.address} - retrying`);
+    }
+    return reply;
+};
+
+/**
+ * Tell the FC to close the open log file and release the log storage.
+ *
+ * @returns {Promise<{unsupported: true}|{status: number|null}>}
+ * @throws {MspTimeoutError|MspCancelledError|MspCrcError}
+ */
+MspHelper.prototype.blackboxLogClose = async function () {
+    const response = await MSP.promise(MSPCodes.MSP2_INDI_BLACKBOX_LOG_CLOSE);
+    if (response?.unsupported) {
+        return { unsupported: true };
+    }
+    return { status: response?.data?.byteLength ? response.data.getUint8(0) : null };
+};
+
+/**
+ * Start erasing all logs (`start` true) or poll the progress of a running erase.
+ *
+ * @param {boolean} start
+ * @returns {Promise<{unsupported: true}|ReturnType<typeof decodeBlackboxLogEraseReply>>}
+ * @throws {MspTimeoutError|MspCancelledError|MspCrcError|Error}
+ */
+MspHelper.prototype.blackboxLogEraseAll = async function (start) {
+    const response = await MSP.promise(MSPCodes.MSP2_INDI_BLACKBOX_LOG_ERASE_ALL, encodeBlackboxLogEraseRequest(start));
+    if (response?.unsupported) {
+        return { unsupported: true };
+    }
+    if (!response) {
+        throw new Error("No response to blackbox log erase request");
+    }
+    return decodeBlackboxLogEraseReply(response.data);
 };
 
 MspHelper.prototype.sendServoConfigurations = async function () {
@@ -2918,4 +2987,5 @@ let mspHelper;
 // instance or re-use existing where needed.
 window.mspHelper = mspHelper = new MspHelper();
 export { mspHelper };
+export * from "./blackboxLogProtocol";
 export default MspHelper;
