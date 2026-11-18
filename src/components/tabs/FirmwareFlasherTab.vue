@@ -6,6 +6,7 @@
 
             <!-- Tab content -->
             <div class="flasher-tab-area">
+                <LocalBuildPanel @firmware="handleLocalBuildFirmware" />
                 <FlasherFlashTab
                     :state="state"
                     :cloud-build="cloudBuild"
@@ -114,6 +115,7 @@ import STM32 from "../../js/protocols/webstm32";
 import { ispConnected } from "../../js/utils/connection.js";
 import FC from "../../js/fc";
 import FlasherFlashTab from "./firmware-flasher/FlasherFlashTab.vue";
+import LocalBuildPanel from "./firmware-flasher/LocalBuildPanel.vue";
 import { applyExpertMode } from "../../js/utils/applyExpertMode";
 
 // Module-scope ref so the active sub-tab persists across component remounts (tab switches).
@@ -125,6 +127,7 @@ export default defineComponent({
         BaseTab,
         WikiButton,
         FlasherFlashTab,
+        LocalBuildPanel,
     },
     setup() {
         // Get $t from Vue i18n if available, otherwise use fallback
@@ -1602,6 +1605,17 @@ export default defineComponent({
             }
         };
 
+        /** Hex produced by the local build daemon: treated like a locally loaded file. */
+        const handleLocalBuildFirmware = async ({ name, text }) => {
+            if (state.flashingInProgress) {
+                return;
+            }
+            enableFlashButton(false);
+            enableLoadFileButton(false);
+            state.developmentFirmwareLoaded = false;
+            await processFirmwareFile({ name }, "hex", text);
+        };
+
         const handleUnstableFirmwareFlash = async () => {
             if (!state.dialogUnstableFirmwareAcknowledgementCheckbox) {
                 return;
@@ -1814,6 +1828,7 @@ export default defineComponent({
             handleFlashFirmware,
             handleLoadRemoteFile,
             handleLoadFile,
+            handleLocalBuildFirmware,
             handleDetectBoard,
             handleRequestDfuPermission,
             showDfuButton,

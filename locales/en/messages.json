@@ -10011,5 +10011,185 @@
     },
     "preflightNotamLastFetched": {
         "message": "Last fetched"
+    },
+    "localBuildTitle": {
+        "message": "Local build"
+    },
+    "localBuildDaemonUrl": {
+        "message": "Build daemon"
+    },
+    "localBuildToken": {
+        "message": "Token"
+    },
+    "localBuildConnect": {
+        "message": "Connect"
+    },
+    "localBuildReconnect": {
+        "message": "Reconnect"
+    },
+    "localBuildSetupTitle": {
+        "message": "How to start the build daemon"
+    },
+    "localBuildSetupLinuxDocker": {
+        "message": "Install Docker Engine and allow your user to run docker without sudo. Log out and back in afterwards."
+    },
+    "localBuildSetupLinuxTools": {
+        "message": "Install git and Python 3 (Debian/Ubuntu shown):"
+    },
+    "localBuildSetupClone": {
+        "message": "Clone the firmware together with its submodules:"
+    },
+    "localBuildSetupStart": {
+        "message": "Start the build daemon in the firmware folder. The first build also creates the Docker builder image, which takes several minutes."
+    },
+    "localBuildSetupToken": {
+        "message": "Paste the token it prints into the Token field above and click Connect."
+    },
+    "localBuildSetupMacDocker": {
+        "message": "Install Docker Desktop and start it."
+    },
+    "localBuildSetupMacTools": {
+        "message": "Install git and Python 3 with the Xcode command line tools:"
+    },
+    "localBuildSetupMacStart": {
+        "message": "Start the build daemon in the firmware folder. The first build also creates the Docker builder image, which takes several minutes. On Apple Silicon it runs natively as arm64."
+    },
+    "localBuildSetupWslInstall": {
+        "message": "Install WSL2 with Ubuntu: open PowerShell as administrator, run this command, then restart Windows."
+    },
+    "localBuildSetupWinDocker": {
+        "message": "Install Docker Desktop and start it. Under Settings → Resources → WSL integration, enable your Ubuntu distribution."
+    },
+    "localBuildSetupWslTools": {
+        "message": "Open the Ubuntu terminal and install git and Python 3:"
+    },
+    "localBuildSetupWslClone": {
+        "message": "Clone the firmware into your Linux home folder. Avoid /mnt/c: builds there are much slower."
+    },
+    "localBuildSetupWslToken": {
+        "message": "Paste the token it prints into the Token field above and click Connect. The Windows browser reaches the daemon inside WSL at http://127.0.0.1:8742. Flashing over USB happens in the browser on Windows, not in WSL."
+    },
+    "localBuildSetupLinkDockerEngine": {
+        "message": "Install Docker Engine"
+    },
+    "localBuildSetupLinkDockerPostInstall": {
+        "message": "Run docker without sudo"
+    },
+    "localBuildSetupLinkDockerMac": {
+        "message": "Install Docker Desktop for Mac"
+    },
+    "localBuildSetupLinkDockerWindows": {
+        "message": "Install Docker Desktop for Windows"
+    },
+    "localBuildSetupLinkDockerWsl": {
+        "message": "Docker Desktop WSL 2 backend"
+    },
+    "localBuildSetupLinkWsl": {
+        "message": "Install WSL"
+    },
+    "localBuildSetupCopy": {
+        "message": "Copy command"
+    },
+    "localBuildSetupCopied": {
+        "message": "Command copied to clipboard"
+    },
+    "localBuildDirty": {
+        "message": "uncommitted changes"
+    },
+    "localBuildDockerUnavailable": {
+        "message": "Docker unavailable"
+    },
+    "localBuildDockerOutdated": {
+        "message": "Builder image will be rebuilt"
+    },
+    "localBuildDockerReady": {
+        "message": "Builder image up to date"
+    },
+    "localBuildSubmodulesMissing": {
+        "message": "Uninitialised submodules (run git submodule update --init --recursive)"
+    },
+    "localBuildBoard": {
+        "message": "Board"
+    },
+    "localBuildProfile": {
+        "message": "Profile"
+    },
+    "localBuildNoProfile": {
+        "message": "(none)"
+    },
+    "localBuildRescan": {
+        "message": "Rescan"
+    },
+    "localBuildRescanTitle": {
+        "message": "Reload the board and profile lists and files from disk; discards edits"
+    },
+    "localBuildTarget": {
+        "message": "Target:"
+    },
+    "localBuildBoardModified": {
+        "message": "board edited"
+    },
+    "localBuildProfileModified": {
+        "message": "profile edited"
+    },
+    "localBuildDuplicateDefines": {
+        "message": "{{count}} defined twice"
+    },
+    "localBuildViewFlags": {
+        "message": "Build flags"
+    },
+    "localBuildViewCli": {
+        "message": "CLI settings"
+    },
+    "localBuildViewFiles": {
+        "message": "Files"
+    },
+    "localBuildShowDisabled": {
+        "message": "Show {{count}} disabled options"
+    },
+    "localBuildExtraFlags": {
+        "message": "Extra flags"
+    },
+    "localBuildCliNote": {
+        "message": "These settings are not compiled into the firmware. They are applied through the CLI after flashing."
+    },
+    "localBuildCopyCli": {
+        "message": "Copy CLI script"
+    },
+    "localBuildCliCopied": {
+        "message": "CLI script copied to clipboard"
+    },
+    "localBuildGlobalContext": {
+        "message": "Global"
+    },
+    "localBuildImport": {
+        "message": "Import"
+    },
+    "localBuildRevert": {
+        "message": "Revert"
+    },
+    "localBuildConfigFiles": {
+        "message": "Indiflight config files"
+    },
+    "localBuildDebug": {
+        "message": "Debug build"
+    },
+    "localBuildClean": {
+        "message": "Clean first"
+    },
+    "localBuildCompile": {
+        "message": "Compile"
+    },
+    "localBuildLoadIntoFlasher": {
+        "message": "Load into flasher"
+    },
+    "localBuildAutoLoad": {
+        "message": "Load into flasher when done"
+    },
+    "localBuildFailedToStart": {
+        "message": "Local build failed to start"
+    },
+    "localBuildFetchFailed": {
+        "message": "Could not download the compiled firmware"
     }
 }
