@@ -155,6 +155,13 @@ const workspaceItems = computed(() => {
                 emit("apply-default", 2);
             },
         },
+        {
+            label: "Preset: Indiflight",
+            icon: "i-lucide-layout-template",
+            onSelect() {
+                emit("apply-default", 3);
+            },
+        },
     ];
 
     return [wsItems, presetItems];
