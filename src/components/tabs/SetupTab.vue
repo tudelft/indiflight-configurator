@@ -3,6 +3,17 @@
         <div class="content_wrapper">
             <div class="tab_title">{{ $t("tabSetup") }}</div>
             <WikiButton docUrl="setup" />
+            <UiBox :title="$t('craftName')" :help="$t('configurationCraftNameHelp')">
+                <div class="flex flex-wrap items-center gap-2">
+                    <UInput v-model="craftNameDraft" maxlength="16" class="min-w-40 flex-1" />
+                    <UButton
+                        :label="$t('save')"
+                        :disabled="!craftNameChanged"
+                        :loading="isSaving"
+                        @click="saveCraftName"
+                    />
+                </div>
+            </UiBox>
             <!-- Top: 3D Model full-width -->
             <div class="setup-top">
                 <div id="interactive_block">
@@ -254,7 +265,7 @@
 </template>
 
 <script setup>
-import { onMounted, onBeforeUnmount, ref, reactive, watch } from "vue";
+import { onMounted, onBeforeUnmount, ref, reactive, watch, computed } from "vue";
 import { useTranslation } from "i18next-vue";
 import { i18n } from "../../js/localization";
 import BaseTab from "./BaseTab.vue";
@@ -280,6 +291,8 @@ import { ispConnected } from "../../js/utils/connection";
 import { addArrayElementsAfter, replaceArrayElement } from "../../js/utils/array";
 import { flightIndicator } from "../../../libraries/flightIndicators";
 import { isIndiflight } from "../../js/utils/indiflight";
+import { useSaving } from "../../composables/useSaving";
+import { useReboot } from "../../composables/useReboot";
 
 const { t } = useTranslation();
 
@@ -317,6 +330,52 @@ const state = reactive({
 });
 
 const fcStore = useFlightControllerStore();
+
+const { isSaving, runSave } = useSaving();
+const { saveToEeprom } = useReboot();
+
+// Same field as the Configuration tab's "Aircraft name"; API 1.45+ stores it as craftName, older firmware as name.
+const storedCraftName = computed(() => {
+    const cfg = fcStore.config;
+    if (!cfg.apiVersion) {
+        return "";
+    }
+    return semver.gte(cfg.apiVersion, API_VERSION_1_45) ? cfg.craftName : cfg.name;
+});
+const craftNameDraft = ref(storedCraftName.value);
+const craftNameChanged = computed(() => craftNameDraft.value !== storedCraftName.value);
+watch(storedCraftName, (name) => {
+    craftNameDraft.value = name;
+});
+
+function saveCraftName() {
+    if (!craftNameChanged.value) {
+        return;
+    }
+    return runSave(
+        async () => {
+            const name = craftNameDraft.value.trim();
+            if (semver.gte(fcStore.config.apiVersion, API_VERSION_1_45)) {
+                fcStore.config.craftName = name;
+                await MSP.promise(
+                    MSPCodes.MSP2_SET_TEXT,
+                    mspHelper.crunch(MSPCodes.MSP2_SET_TEXT, MSPCodes.CRAFT_NAME),
+                );
+            } else {
+                fcStore.config.name = name;
+                await MSP.promise(MSPCodes.MSP_SET_NAME, mspHelper.crunch(MSPCodes.MSP_SET_NAME));
+            }
+            await saveToEeprom();
+            craftNameDraft.value = name;
+        },
+        {
+            onError: (e) => {
+                console.error("Failed to save aircraft name", e);
+                gui_log(i18n.getMessage("configurationSaveFailed"));
+            },
+        },
+    );
+}
 
 const disarmFlagElements = [
     "NO_GYRO",
