@@ -12,6 +12,9 @@ import ui from "@nuxt/ui/vite";
 import nuxtUiViteOptions from "./nuxt-ui.vite.js";
 
 const commitHash = child.execSync("git rev-parse --short HEAD").toString().trim();
+// Set by pushing a web-v* tag (see .github/workflows/deploy-web.yml); shown next to the hash.
+const releaseTag = child.execSync("git tag --points-at HEAD --list 'web-v*'").toString().trim().split("\n")[0];
+const revision = releaseTag ? `${releaseTag} ${commitHash}` : commitHash;
 
 const devHostname = process.env.BF_DEV_HOSTNAME || "local.betaflight.com";
 
@@ -147,7 +150,7 @@ export default defineConfig({
     define: {
         __APP_VERSION__: JSON.stringify(pkg.version),
         __APP_PRODUCTNAME__: JSON.stringify(pkg.productName),
-        __APP_REVISION__: JSON.stringify(commitHash),
+        __APP_REVISION__: JSON.stringify(revision),
     },
     build: {
         rollupOptions: {
