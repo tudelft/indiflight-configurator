@@ -55,4 +55,4 @@ jobs:
           chmod 644 ~/.ssh/known_hosts
 
       - name: Deploy with rsync
-        run: rsync -avz --delete src/dist/ deploy-indiflight@app.indiflight.org:/indiflight-app
+        run: rsync -avz --delete src/dist/ deploy-indiflight@app.indiflight.org:/
