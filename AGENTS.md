@@ -150,3 +150,46 @@ The sections below are taste-call patterns that can't be reasonably linted. They
 - Compound components via `provide` / `inject`.
 - Custom directives for cross-cutting concerns.
 - `Teleport` for modals and overlays.
+
+---
+
+# Indiflight specifics
+
+Project facts that aren't obvious from the code. The ledger rules above don't apply to them.
+
+## Local build daemon and simulation
+- Both the firmware flasher's "Local build" panel and the Simulation tab use `start.py`, which
+  lives in the firmware repo (`../indiflight`; it listens on `127.0.0.1:8742` by default). The API lives there.
+  `src/js/indiflight/localBuilderClient.js` is the only client.
+- `src/stores/localBuild.js` owns the connection (url, token, `client`, `info`, config lists).
+  `src/stores/simulation.js` reuses that connection. A setup store exposes only what it
+  returns, so anything another store needs has to be in the return object.
+- Builds and sims are both jobs with the same ids and the same `/api/builds/<id>` routes
+  (summary, SSE events, cancel, artifacts). `kind` tells them apart. Each store must only
+  attach to `info.activeJob` of its own `info.activeJobKind`. Final states are
+  `success | failed | cancelled | stopped`.
+- `BuildConfigPreview.vue` takes a `source` store (the local build store by default).
+  `DaemonConnection.vue` is the shared URL/token/status block.
+- Sim scripts and the SIL container contract are documented in
+  `../indiflight/support/simulation/AGENTS.md`. Daemon changes need a matching commit in the firmware repo.
+
+## Adding a tab
+Add it to `src/components/sidebar/sidebar_items.js` and `src/js/vue_tab_registry.js`.
+Add it to the allowed-tab lists in `src/js/gui.js`: both lists for `mode: "shared"`.
+Add its `tab*` label in `locales/en/messages.json`. To switch tabs from code, call
+`switchTab(key, { mode })` from `src/js/tab_switch.js`. To hand a log to the viewer, call
+`openLogInBlackboxViewer()` in `src/blackbox-viewer/vue_init.js`.
+
+## Release
+- The web version is the annotated tag `web-vX.Y.Z` (`git tag -a web-vX.Y.Z -m web-vX.Y.Z`).
+  `vite.config.js` reads it for the footer.
+- Pushing the tag runs `.github/workflows/deploy-web.yml`, a production deploy that takes about
+  20 minutes.
+- `gh` resolves to the betaflight upstream by default. Pass `-R tudelft/indiflight-configurator`.
+
+## Driving the app for verification
+- Run `npm run dev`, which serves `http://localhost:8080`. The project has no Playwright, so
+  install `playwright-core` into a scratch dir and launch the system Chromium:
+  `chromium.launch({ executablePath: "/snap/bin/chromium", args: ["--no-sandbox"] })`.
+- A fresh profile opens the Options dialog on load. Press Escape before clicking anything.
+- Scope selectors to the tab (`.tab-<key>`), because the sidebar has its own Connect buttons.
