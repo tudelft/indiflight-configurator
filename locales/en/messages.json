@@ -512,6 +512,7 @@
     },
     "tabAutotune": { "message": "Autotune" },
     "tabBlackboxViewer": { "message": "Blackbox Viewer", "description": "Navigation sidebar label for the Blackbox log viewer tab" },
+    "tabSimulation": { "message": "Simulation", "description": "Navigation sidebar label for the software-in-the-loop simulation tab" },
     "autotuneImportTitle": { "message": "Blackbox Chirp Analysis" },
     "autotuneImportButton": { "message": "Import Blackbox Log" },
     "autotuneImportDescription": { "message": "Import a blackbox log recorded with debug_mode = CHIRP to analyze frequency response and compute PID recommendations." },
@@ -10069,6 +10070,9 @@
     "localBuildSetupWslToken": {
         "message": "Paste the token it prints into the Token field above and click Connect. The Windows browser reaches the daemon inside WSL at http://127.0.0.1:8742. Flashing over USB happens in the browser on Windows, not in WSL."
     },
+    "localBuildSetupSimulation": {
+        "message": "Optional, for the Simulation tab: the same daemon runs software-in-the-loop simulations. The first one builds a second Docker image (pyndiflight-sil, with ROS 2 and micro-ROS), which takes 10 minutes or more and several GB. The 3D visualization is served on 127.0.0.1, port 5000 or a free port if 5000 is taken, and the blackbox logs land in logs-mockup/ in the firmware folder. After updating the firmware checkout, restart the daemon."
+    },
     "localBuildSetupLinkDockerEngine": {
         "message": "Install Docker Engine"
     },
@@ -10191,5 +10195,101 @@
     },
     "localBuildFetchFailed": {
         "message": "Could not download the compiled firmware"
+    },
+    "simulationSetupTitle": {
+        "message": "Software-in-the-loop simulation"
+    },
+    "simulationIntro": {
+        "message": "Runs this working tree as a MOCKUP build inside the pyndiflight-sil Docker image, driven by a PyNDIflight script from support/simulation, through the same local daemon as the firmware flasher's local build."
+    },
+    "simulationDockerOutdated": {
+        "message": "SIL image will be rebuilt"
+    },
+    "simulationDockerReady": {
+        "message": "SIL image up to date"
+    },
+    "simulationScript": {
+        "message": "Simulation script"
+    },
+    "simulationScriptModified": {
+        "message": "Script edited"
+    },
+    "simulationNoScripts": {
+        "message": "No simulation scripts found in support/simulation"
+    },
+    "simulationCliNote": {
+        "message": "Applied by the simulation script at startup (--sil-profile-txt), before the first tick."
+    },
+    "simulationOptions": {
+        "message": "Script options"
+    },
+    "simulationExtraArgs": {
+        "message": "Extra arguments"
+    },
+    "simulationGdbserver": {
+        "message": "gdbserver"
+    },
+    "simulationGdbserverTitle": {
+        "message": "Start the SIL under gdbserver on 127.0.0.1:3333; the simulation waits until a debugger attaches"
+    },
+    "simulationHostNetwork": {
+        "message": "Host network"
+    },
+    "simulationHostNetworkTitle": {
+        "message": "Run the container with --network host (Linux), e.g. to reach a micro-ROS agent. The visualization is then on port 5000 of all interfaces"
+    },
+    "simulationStart": {
+        "message": "Start simulation"
+    },
+    "simulationStop": {
+        "message": "Stop"
+    },
+    "simulationFailedToStart": {
+        "message": "Simulation failed to start"
+    },
+    "simulationRunTitle": {
+        "message": "Simulation"
+    },
+    "simulationStateQueued": {
+        "message": "queued"
+    },
+    "simulationStateImage": {
+        "message": "building image"
+    },
+    "simulationStateBuilding": {
+        "message": "compiling MOCKUP"
+    },
+    "simulationStateRunning": {
+        "message": "running"
+    },
+    "simulationStateStopped": {
+        "message": "stopped"
+    },
+    "simulationImageNote": {
+        "message": "The first run builds the SIL image (ROS 2 and micro-ROS included), which takes several minutes."
+    },
+    "simulationVisualization": {
+        "message": "Visualization"
+    },
+    "simulationReloadVis": {
+        "message": "Reload"
+    },
+    "simulationVisWaiting": {
+        "message": "Waiting for the visualization to come up…"
+    },
+    "simulationLogs": {
+        "message": "Logs"
+    },
+    "simulationLogFiles": {
+        "message": "Blackbox logs"
+    },
+    "simulationDownloadFailed": {
+        "message": "Could not download the log"
+    },
+    "simulationOpenInViewer": {
+        "message": "Open {{name}} in Blackbox Viewer"
+    },
+    "simulationEditNeedsToken": {
+        "message": "The daemon runs with --no-token, so it refuses edited scripts: they run arbitrary Python with the firmware folder writable. Restart it with a token, or save the script in support/simulation."
     }
 }

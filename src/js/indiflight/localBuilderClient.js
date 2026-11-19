@@ -1,5 +1,6 @@
 /**
  * HTTP client for the local Indiflight build daemon (`python3 start.py` in the firmware repo).
+ * Builds and SIL simulations are both jobs: they share ids and the per-job routes under /api/builds.
  */
 
 export const DEFAULT_BUILDER_URL = "http://127.0.0.1:8742";
@@ -66,13 +67,13 @@ export class LocalBuilderClient {
         return this.json("/api/info");
     }
 
-    /** @returns {Promise<{boards: string[], profiles: string[]}>} */
+    /** @returns {Promise<{boards: string[], profiles: string[], sims?: string[]}>} */
     configs() {
         return this.json("/api/configs");
     }
 
     /**
-     * @param {"boards" | "profiles"} kind
+     * @param {"boards" | "profiles" | "sims"} kind
      * @param {string} name
      */
     async configFile(kind, name) {
@@ -92,6 +93,19 @@ export class LocalBuilderClient {
         });
     }
 
+    /**
+     * @param {{sim: string, simText?: string, profile: string, profileText?: string, debug?: string | null,
+     *          args?: string[], gdbserver?: boolean, hostNetwork?: boolean}} request
+     * @returns {Promise<{id: string}>}
+     */
+    startSim(request) {
+        return this.json("/api/sims", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(request),
+        });
+    }
+
     job(id) {
         return this.json(`/api/builds/${encodeURIComponent(id)}`);
     }
@@ -100,11 +114,18 @@ export class LocalBuilderClient {
         return this.json(`/api/builds/${encodeURIComponent(id)}/cancel`, { method: "POST" });
     }
 
+    artifact(id, name) {
+        return this.request(`/api/builds/${encodeURIComponent(id)}/artifacts/${encodeURIComponent(name)}`);
+    }
+
     /** @returns {Promise<string>} */
     async artifactText(id, name) {
-        return (
-            await this.request(`/api/builds/${encodeURIComponent(id)}/artifacts/${encodeURIComponent(name)}`)
-        ).text();
+        return (await this.artifact(id, name)).text();
+    }
+
+    /** @returns {Promise<Blob>} */
+    async artifactBlob(id, name) {
+        return (await this.artifact(id, name)).blob();
     }
 
     /**

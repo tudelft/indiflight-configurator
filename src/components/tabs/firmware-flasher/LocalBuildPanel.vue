@@ -1,68 +1,8 @@
 <template>
     <UiBox :title="$t('localBuildTitle')" collapsible class="mt-4">
-        <!-- Connection to the build daemon -->
-        <div class="flex flex-wrap items-end gap-2">
-            <UFormField :label="$t('localBuildDaemonUrl')" size="sm">
-                <UInput v-model="store.url" size="sm" class="w-56 font-mono" :disabled="busy" />
-            </UFormField>
-            <UFormField :label="$t('localBuildToken')" size="sm">
-                <UInput
-                    v-model="store.token"
-                    type="password"
-                    size="sm"
-                    class="w-56 font-mono"
-                    :disabled="busy"
-                    @keydown.enter="store.connect()"
-                />
-            </UFormField>
-            <UButton
-                size="sm"
-                :icon="store.connected ? 'i-lucide-refresh-cw' : 'i-lucide-plug'"
-                :loading="store.status === 'connecting'"
-                :disabled="busy"
-                @click="store.connect()"
-            >
-                {{ store.connected ? $t("localBuildReconnect") : $t("localBuildConnect") }}
-            </UButton>
-        </div>
-
-        <UAlert v-if="store.status === 'error'" color="error" variant="subtle" :title="store.error" />
-
-        <!-- Keyed on connection state so it re-opens by default after a disconnect -->
-        <details :key="String(store.connected)" :open="!store.connected" class="text-sm">
-            <summary class="cursor-pointer text-muted">{{ $t("localBuildSetupTitle") }}</summary>
-            <div class="pt-2">
-                <LocalBuildSetupGuide />
-            </div>
-        </details>
+        <DaemonConnection :busy="store.building" />
 
         <template v-if="store.connected && store.info">
-            <!-- Working directory and builder image state -->
-            <div class="flex flex-wrap items-center gap-2 text-xs">
-                <span class="font-mono text-muted">{{ store.info.repo }}</span>
-                <UBadge color="neutral" variant="subtle" size="sm" class="font-mono">
-                    {{ store.info.git.branch ?? "detached" }} @ {{ store.info.git.describe }}
-                </UBadge>
-                <UBadge v-if="store.info.git.dirty" color="warning" variant="subtle" size="sm">
-                    {{ $t("localBuildDirty") }}
-                </UBadge>
-                <UBadge
-                    :color="dockerBadge.color"
-                    variant="subtle"
-                    size="sm"
-                    :title="store.info.docker.error ?? store.info.docker.image"
-                >
-                    {{ dockerBadge.label }}
-                </UBadge>
-            </div>
-            <UAlert
-                v-if="store.info.git.submodulesMissing?.length"
-                color="warning"
-                variant="subtle"
-                :title="$t('localBuildSubmodulesMissing')"
-                :description="store.info.git.submodulesMissing.join(', ')"
-            />
-
             <!-- Board / profile selection -->
             <div class="flex flex-wrap items-end gap-2">
                 <UFormField :label="$t('localBuildBoard')" size="sm">
@@ -191,7 +131,7 @@
 import { computed, inject, nextTick, onMounted, ref, watch } from "vue";
 import UiBox from "@/components/elements/UiBox.vue";
 import BuildConfigPreview from "./BuildConfigPreview.vue";
-import LocalBuildSetupGuide from "./LocalBuildSetupGuide.vue";
+import DaemonConnection from "./DaemonConnection.vue";
 import { useLocalBuildStore } from "@/stores/localBuild";
 import { gui_log } from "@/js/gui_log";
 import { i18n } from "@/js/localization";
@@ -222,17 +162,6 @@ const autoLoad = ref(true);
 const loading = ref(false);
 const startError = ref("");
 const logEl = ref(null);
-
-const dockerBadge = computed(() => {
-    const docker = store.info.docker;
-    if (!docker.available) {
-        return { color: "error", label: $t("localBuildDockerUnavailable") };
-    }
-    if (!docker.exists || !docker.upToDate) {
-        return { color: "warning", label: $t("localBuildDockerOutdated") };
-    }
-    return { color: "success", label: $t("localBuildDockerReady") };
-});
 
 const STATE_COLORS = { success: "success", failed: "error", cancelled: "neutral" };
 const stateColor = computed(() => STATE_COLORS[store.job?.state] ?? "primary");

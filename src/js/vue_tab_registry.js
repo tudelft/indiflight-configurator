@@ -24,6 +24,7 @@ import PreflightTab from "../components/tabs/PreflightTab.vue";
 import VtxTab from "../components/tabs/VtxTab.vue";
 import AutotuneTab from "../components/tabs/AutotuneTab.vue";
 import BlackboxViewerTab from "../components/tabs/BlackboxViewerTab.vue";
+import SimulationTab from "../components/tabs/SimulationTab.vue";
 
 export const VueTabComponents = {
     help: HelpTab,
@@ -52,4 +53,5 @@ export const VueTabComponents = {
     vtx: VtxTab,
     autotune: AutotuneTab,
     blackbox_viewer: BlackboxViewerTab,
+    simulation: SimulationTab,
 };

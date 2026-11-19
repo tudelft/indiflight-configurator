@@ -6,7 +6,7 @@ import { LocalBuilderClient, DEFAULT_BUILDER_URL } from "@/js/indiflight/localBu
 
 const STORAGE_KEY = "localBuilder";
 const MAX_LOG_LINES = 5000;
-const FINISHED_STATES = ["success", "failed", "cancelled"];
+const FINISHED_STATES = ["success", "failed", "cancelled", "stopped"];
 const SAFE_ARTIFACT_RE = /^[A-Za-z0-9][A-Za-z0-9._-]*\.hex$/;
 
 /** @typedef {"boards" | "profiles"} ConfigKind */
@@ -32,6 +32,8 @@ export const useLocalBuildStore = defineStore("localBuild", () => {
     // Configuration selection
     const boards = ref([]);
     const profiles = ref([]);
+    // SIL simulation scripts; listed here because the simulation store shares this connection
+    const sims = ref([]);
     const board = ref(saved.board ?? "");
     const profile = ref(saved.profile ?? "");
     /** Text as stored in the working directory */
@@ -89,7 +91,8 @@ export const useLocalBuildStore = defineStore("localBuild", () => {
             client.value = candidate;
             status.value = "connected";
             await refreshConfigs();
-            if (info.value.activeJob) {
+            // A running simulation is attached by the simulation store; older daemons send no kind
+            if (info.value.activeJob && (info.value.activeJobKind ?? "build") === "build") {
                 await attachJob(info.value.activeJob);
             }
         } catch (e) {
@@ -120,6 +123,7 @@ export const useLocalBuildStore = defineStore("localBuild", () => {
         const lists = await client.value.configs();
         boards.value = lists.boards;
         profiles.value = lists.profiles;
+        sims.value = lists.sims ?? [];
         if (!boards.value.includes(board.value)) {
             board.value = boards.value[0] ?? "";
         }
@@ -252,9 +256,12 @@ export const useLocalBuildStore = defineStore("localBuild", () => {
         error,
         info,
         tokenRequired,
+        /** shared with the simulation store */
+        client,
         connected,
         boards,
         profiles,
+        sims,
         board,
         profile,
         repoText,

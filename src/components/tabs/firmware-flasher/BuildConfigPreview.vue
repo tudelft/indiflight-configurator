@@ -67,7 +67,7 @@
         <!-- Runtime settings: sent through the CLI after flashing, not compiled in -->
         <div v-else-if="view === 'cli'" class="flex flex-col gap-3">
             <div class="flex flex-wrap items-center justify-between gap-2">
-                <p class="text-xs text-muted">{{ $t("localBuildCliNote") }}</p>
+                <p class="text-xs text-muted">{{ $t(cliNote) }}</p>
                 <UButton size="xs" variant="soft" icon="i-lucide-copy" @click="copyCliScript">
                     {{ $t("localBuildCopyCli") }}
                 </UButton>
@@ -123,18 +123,24 @@
             <div v-for="file in files" :key="file.kind" class="flex flex-col gap-1">
                 <div class="flex items-center justify-between gap-2">
                     <span class="text-xs font-semibold">
-                        {{ file.label }}
+                        {{ $t(file.labelKey) }}
                         <span class="font-mono font-normal text-muted">{{ file.name }}</span>
                     </span>
                     <span class="flex gap-1">
-                        <UButton size="xs" variant="ghost" icon="i-lucide-file-up" @click="importFile(file.kind)">
+                        <UButton
+                            size="xs"
+                            variant="ghost"
+                            icon="i-lucide-file-up"
+                            :disabled="readonly"
+                            @click="importFile(file)"
+                        >
                             {{ $t("localBuildImport") }}
                         </UButton>
                         <UButton
                             size="xs"
                             variant="ghost"
                             icon="i-lucide-undo-2"
-                            :disabled="!file.modified"
+                            :disabled="readonly || !file.modified"
                             @click="store.setText(file.kind, null)"
                         >
                             {{ $t("localBuildRevert") }}
@@ -144,6 +150,7 @@
                 <UTextarea
                     :model-value="store.effectiveText(file.kind)"
                     :rows="18"
+                    :disabled="readonly"
                     autoresize
                     :maxrows="30"
                     spellcheck="false"
@@ -165,8 +172,21 @@ import Clipboard from "@/js/Clipboard";
 import { gui_log } from "@/js/gui_log";
 import { i18n } from "@/js/localization";
 
+const props = defineProps({
+    /**
+     * Config source with the local build store's shape (merged, effectiveText, setText, ...);
+     * may add `files` to choose the editable files. Defaults to the local build store.
+     */
+    source: { type: Object, default: null },
+    /** i18n key of the note on how CLI settings reach the flight controller */
+    cliNote: { type: String, default: "localBuildCliNote" },
+    readonly: { type: Boolean, default: false },
+});
+
 const $t = inject("$t", (key, params) => i18n.getMessage(key, params));
-const store = useLocalBuildStore();
+const localBuild = useLocalBuildStore();
+// Not reactive to a later prop change: each tab passes one fixed store
+const store = props.source ?? localBuild;
 const merged = computed(() => store.merged);
 
 const view = ref("flags");
@@ -224,7 +244,7 @@ const defineGroups = computed(() => {
     return [...groups.values()];
 });
 
-const extraFlagTokens = computed(() => store.options.extraFlags.split(/\s+/).filter(Boolean));
+const extraFlagTokens = computed(() => (store.options.extraFlags ?? "").split(/\s+/).filter(Boolean));
 
 function groupBy(list, keyOf) {
     const groups = new Map();
@@ -249,17 +269,20 @@ const commandGroups = computed(() =>
     })),
 );
 
-const files = computed(() => [
-    { kind: "boards", label: $t("localBuildBoard"), name: store.board, modified: store.boardModified },
-    { kind: "profiles", label: $t("localBuildProfile"), name: store.profile, modified: store.profileModified },
-]);
+const files = computed(
+    () =>
+        store.files ?? [
+            { kind: "boards", labelKey: "localBuildBoard", name: store.board, modified: store.boardModified },
+            { kind: "profiles", labelKey: "localBuildProfile", name: store.profile, modified: store.profileModified },
+        ],
+);
 
 function copyCliScript() {
     Clipboard.writeText([...merged.value.cliScript, "save"].join("\n"), () => gui_log($t("localBuildCliCopied")));
 }
 
-async function importFile(kind) {
-    const file = await FileSystem.pickOpenFile($t("localBuildConfigFiles"), [".txt"]);
+async function importFile({ kind, ext = ".txt" }) {
+    const file = await FileSystem.pickOpenFile($t("localBuildConfigFiles"), [ext]);
     if (file) {
         store.setText(kind, await FileSystem.readFile(file));
     }

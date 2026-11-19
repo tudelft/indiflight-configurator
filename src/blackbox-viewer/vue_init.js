@@ -21,6 +21,22 @@ export function setBlackboxViewerDark(enabled) {
 
 // Single live instance — the viewer tab mounts at most once at a time.
 let current = null;
+// Log handed over by another tab before the viewer was mounted; loaded by initBlackboxViewer
+let pendingLog = null;
+
+/**
+ * Show a log held in memory (e.g. a simulation's blackbox file) in the viewer. If the viewer
+ * tab is not mounted yet, the log waits until it is; the caller switches to the tab.
+ * @param {Uint8Array} data
+ * @param {string} name  shown as the file name
+ */
+export function openLogInBlackboxViewer(data, name) {
+    if (current) {
+        useAppStore(pinia).loadLogBuffer?.(data, name);
+    } else {
+        pendingLog = { data, name };
+    }
+}
 
 /**
  * Mount the blackbox log viewer inside the given root element. The root must contain the
@@ -47,6 +63,13 @@ export function initBlackboxViewer(rootEl, options = {}) {
     const teardown = bootstrapViewer();
 
     current = { app, teardown };
+
+    if (pendingLog) {
+        const { data, name } = pendingLog;
+        pendingLog = null;
+        // after the host's mount hook has sized the canvases
+        setTimeout(() => useAppStore(pinia).loadLogBuffer?.(data, name), 0);
+    }
 }
 
 /** Reverse initBlackboxViewer: tear down listeners/loops/instances and unmount the app. */

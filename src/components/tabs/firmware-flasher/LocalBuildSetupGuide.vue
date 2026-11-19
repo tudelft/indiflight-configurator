@@ -68,6 +68,7 @@ const LINKS = {
 };
 
 const tokenStep = { text: "localBuildSetupToken" };
+const simStep = { text: "localBuildSetupSimulation" };
 
 const guides = {
     linux: [
@@ -80,6 +81,7 @@ const guides = {
         { text: "localBuildSetupClone", command: CLONE },
         { text: "localBuildSetupStart", command: START },
         tokenStep,
+        simStep,
     ],
     mac: [
         { text: "localBuildSetupMacDocker", links: [LINKS.dockerMac] },
@@ -87,6 +89,7 @@ const guides = {
         { text: "localBuildSetupClone", command: CLONE },
         { text: "localBuildSetupMacStart", command: START },
         tokenStep,
+        simStep,
     ],
     windows: [
         { text: "localBuildSetupWslInstall", links: [LINKS.wsl], command: "wsl --install" },
@@ -95,6 +98,7 @@ const guides = {
         { text: "localBuildSetupWslClone", command: `cd ~\n${CLONE}` },
         { text: "localBuildSetupStart", command: START },
         { text: "localBuildSetupWslToken" },
+        simStep,
     ],
 };
 
