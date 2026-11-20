@@ -57,8 +57,8 @@ export const useSimulationStore = defineStore("simulation", () => {
 
     /** Editable files, in the shape BuildConfigPreview expects */
     const files = computed(() => [
-        { kind: "profiles", labelKey: "localBuildProfile", name: profile.value, modified: profileModified.value },
         { kind: "sims", labelKey: "simulationScript", name: sim.value, modified: simModified.value, ext: ".py" },
+        { kind: "profiles", labelKey: "localBuildProfile", name: profile.value, modified: profileModified.value },
     ]);
 
     const availableFlags = computed(() => parseSimFlags(effectiveText("sims")));
