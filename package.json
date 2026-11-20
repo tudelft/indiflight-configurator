@@ -61,7 +61,7 @@
     "djv": "^2.1.4",
     "dompurify": "^3.4.11",
     "esptool-js": "^0.6.0",
-    "flightplotter": "github:tudelft/pyFlightPlotter#js-version",
+    "flightplotter": "github:tudelft/pyFlightPlotter#v0.4.1",
     "geomagnetism": "^0.2.0",
     "i18next": "^24.2.2",
     "i18next-http-backend": "^3.0.5",
@@ -119,5 +119,9 @@
     "vite-plugin-mkcert": "^1.17.9",
     "vite-plugin-static-copy": "^4.1.1",
     "vitest": "^4.1.9"
+  },
+  "allowScripts": {
+    "esbuild": false,
+    "vue-demi": false
   }
 }
