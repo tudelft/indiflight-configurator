@@ -49,10 +49,10 @@
     "node": "24.x"
   },
   "dependencies": {
-    "@capacitor/android": "8.3.4",
-    "@capacitor/core": "8.3.4",
+    "@capacitor/android": "8.6.2",
+    "@capacitor/core": "8.6.2",
     "@iconify-json/lucide": "^1.2.101",
-    "@nuxt/ui": "^4.4.0",
+    "@nuxt/ui": "^4.13.0",
     "@simplewebauthn/browser": "^13.2.2",
     "@tauri-apps/api": "~2.11.0",
     "@vitejs/plugin-vue": "^6.0.1",
@@ -91,7 +91,7 @@
   },
   "devDependencies": {
     "@babel/core": "^7.29.6",
-    "@capacitor/cli": "^8.3.0",
+    "@capacitor/cli": "^8.6.2",
     "@rollup/plugin-alias": "^5.1.1",
     "@rollup/plugin-commonjs": "^28.0.2",
     "@rollup/plugin-node-resolve": "^16.0.0",
