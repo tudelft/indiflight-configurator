@@ -63,6 +63,17 @@
             >
                 {{ $t("simulationOpenInViewer", { name: a.name }) }}
             </UButton>
+            <UButton
+                v-for="a in viewerLogs"
+                :key="`plot-${a.name}`"
+                size="xs"
+                variant="ghost"
+                icon="i-lucide-activity"
+                :loading="opening === `plot-${a.name}`"
+                @click="openInFlightPlotter(a)"
+            >
+                {{ $t("simulationOpenInFlightPlotter", { name: a.name }) }}
+            </UButton>
         </div>
 
         <pre
@@ -84,6 +95,7 @@ import { useSimulationStore } from "@/stores/simulation";
 import FileSystem from "@/js/FileSystem";
 import { switchTab } from "@/js/tab_switch";
 import { openLogInBlackboxViewer } from "@/blackbox-viewer/vue_init";
+import { useFlightPlotterStore } from "@/stores/flightPlotter";
 import { gui_log } from "@/js/gui_log";
 import { i18n } from "@/js/localization";
 import { escapeHtml } from "@/js/utils/common";
@@ -150,6 +162,20 @@ async function openInViewer(artifact) {
         const blob = await sim.fetchArtifact(artifact.name);
         openLogInBlackboxViewer(new Uint8Array(await blob.arrayBuffer()), artifact.name);
         switchTab("blackbox_viewer", { mode: "shared" });
+    } catch (e) {
+        gui_log(`${$t("simulationDownloadFailed")}: ${escapeHtml(e.message)}`);
+    } finally {
+        opening.value = "";
+    }
+}
+
+const flightPlotter = useFlightPlotterStore();
+async function openInFlightPlotter(artifact) {
+    opening.value = `plot-${artifact.name}`;
+    try {
+        const blob = await sim.fetchArtifact(artifact.name);
+        flightPlotter.openLog(new Uint8Array(await blob.arrayBuffer()), artifact.name);
+        switchTab("flight_plotter", { mode: "shared" });
     } catch (e) {
         gui_log(`${$t("simulationDownloadFailed")}: ${escapeHtml(e.message)}`);
     } finally {

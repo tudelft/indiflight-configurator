@@ -9,6 +9,7 @@ import {
     FIRMWARE_TYPE_CLEANFLIGHT,
 } from "./flightlog_fielddefs";
 import { formatTime } from "./tools";
+import { INDIFLIGHT_FIELDS, indiflightField } from "./indiflight_fields.js";
 import { useSettingsStore } from "./stores/settings.js";
 import {
     getDebugModes,
@@ -198,56 +199,58 @@ function formatAngle(degrees, decimals, perTime = "") {
     return `${degrees.toFixed(decimals)} °${perTime}`;
 }
 
-const UNIT_FLOAT_TO_SIGNED16VB = (127 << 6) - 1; // Indiflight scale for values in [-1, 1]
-const UNIT_FLOAT_TO_UNSIGNED16VB = (127 << 7) - 1; // Indiflight scale for values in [0, 1]
-const unitFloat = (v) => (v / UNIT_FLOAT_TO_SIGNED16VB).toFixed(3);
+// Indiflight-only fields: value from the shared scaling table, formatted for display
+const phys = (name) => INDIFLIGHT_FIELDS[name].phys;
+const unitFloat = (name) => (v) => phys(name)(v).toFixed(3);
+const meters = (name) => (v) => `${phys(name)(v).toFixed(3)} m`;
+const metersPerSecond = (name) => (v) => `${phys(name)(v).toFixed(2)} m/s`;
+const radPerSecond = (name) => (v) => `${phys(name)(v).toFixed(0)} rad/s`;
 
-// Indiflight-only fields, keyed by field name without the array index; must match the scaling in Indiflight's blackbox.c
 const INDIFLIGHT_FIELD_FORMATS = {
-    quat: unitFloat,
-    quatSp: unitFloat,
-    ekf_quat: unitFloat,
-    extQuat: unitFloat,
-    localQuat: unitFloat,
-    hoverAttitude: unitFloat,
-    u: unitFloat,
-    u_state: unitFloat,
-    dv: (v, i) => (i < 3 ? `${(v / 10).toFixed(1)} N/kg` : `${(v / 10).toFixed(1)} Nm/(kgm^2)`),
-    alpha: (v) => formatAngle(v * 10, 0, "/s/s"),
-    alphaSp: (v) => formatAngle(v * 10, 0, "/s/s"),
-    spfSp: (v) => `${(v / 100).toFixed(2)} N/kg`,
-    omega: (v) => `${v.toFixed(0)} rad/s`,
-    omegaUnfiltered: (v) => `${v.toFixed(0)} rad/s`,
-    servo_feedback: (v) => formatAngle(v / 100, 2),
-    pitot_pressureZero: (v) => `${(v / 100).toFixed(2)} Pa`,
-    pitot_pressure: (v) => `${(v / 100).toFixed(2)} Pa`,
-    pitot_temperature: (v) => `${(v / 100).toFixed(2)} K`,
-    pitot_airSpeed: (v) => `${(v / 100).toFixed(2)} m/s`,
-    learner_gains: (v) => (v / 10).toFixed(1),
+    quat: unitFloat("quat"),
+    quatSp: unitFloat("quatSp"),
+    ekf_quat: unitFloat("ekf_quat"),
+    extQuat: unitFloat("extQuat"),
+    localQuat: unitFloat("localQuat"),
+    hoverAttitude: unitFloat("hoverAttitude"),
+    u: unitFloat("u"),
+    u_state: unitFloat("u_state"),
+    dv: (v, i) => `${phys("dv")(v).toFixed(1)} ${i < 3 ? "N/kg" : "Nm/(kgm^2)"}`,
+    alpha: (v) => formatAngle(phys("alpha")(v), 0, "/s/s"),
+    alphaSp: (v) => formatAngle(phys("alphaSp")(v), 0, "/s/s"),
+    spfSp: (v) => `${phys("spfSp")(v).toFixed(2)} N/kg`,
+    omega: radPerSecond("omega"),
+    omegaUnfiltered: radPerSecond("omegaUnfiltered"),
+    servo_feedback: (v) => formatAngle(phys("servo_feedback")(v), 2),
+    pitot_pressureZero: (v) => `${phys("pitot_pressureZero")(v).toFixed(2)} Pa`,
+    pitot_pressure: (v) => `${phys("pitot_pressure")(v).toFixed(2)} Pa`,
+    pitot_temperature: (v) => `${phys("pitot_temperature")(v).toFixed(2)} K`,
+    pitot_airSpeed: (v) => `${phys("pitot_airSpeed")(v).toFixed(2)} m/s`,
+    learner_gains: (v) => phys("learner_gains")(v).toFixed(1),
     // modular_drone_learning fork
-    quatSpPreFf: unitFloat,
-    d: unitFloat,
-    rpmCmd_f: unitFloat,
-    omegaSp: (v) => `${v.toFixed(0)} rad/s`,
-    rpmOmega_f: (v) => `${v.toFixed(0)} rad/s`,
-    omega_dot: (v) => `${(v * 100).toFixed(0)} rad/s/s`,
-    pos: (v) => `${(v / 1000).toFixed(3)} m`,
-    posSp: (v) => `${(v / 1000).toFixed(3)} m`,
-    extPos: (v) => `${(v / 1000).toFixed(3)} m`,
-    localPos: (v) => `${(v / 1000).toFixed(3)} m`,
-    ekf_pos: (v) => `${(v / 1000).toFixed(3)} m`,
-    vel: (v) => `${(v / 100).toFixed(2)} m/s`,
-    velSp: (v) => `${(v / 100).toFixed(2)} m/s`,
-    extVel: (v) => `${(v / 100).toFixed(2)} m/s`,
-    localVel: (v) => `${(v / 100).toFixed(2)} m/s`,
-    ekf_vel: (v) => `${(v / 100).toFixed(2)} m/s`,
-    accSp: (v) => `${(v / 100).toFixed(2)} m/s/s`,
-    extTime: (v) => `${(v / 1000).toFixed(3)} ms`,
-    ekf_acc_b: (v) => `${(v / 1000).toFixed(3)} m/s/s`,
-    ekf_gyro_b: (v) => formatAngle(v / 1000, 3, "/s"),
+    quatSpPreFf: unitFloat("quatSpPreFf"),
+    d: unitFloat("d"),
+    rpmCmd_f: unitFloat("rpmCmd_f"),
+    omegaSp: radPerSecond("omegaSp"),
+    rpmOmega_f: radPerSecond("rpmOmega_f"),
+    omega_dot: (v) => `${phys("omega_dot")(v).toFixed(0)} rad/s/s`,
+    pos: meters("pos"),
+    posSp: meters("posSp"),
+    extPos: meters("extPos"),
+    localPos: meters("localPos"),
+    ekf_pos: meters("ekf_pos"),
+    vel: metersPerSecond("vel"),
+    velSp: metersPerSecond("velSp"),
+    extVel: metersPerSecond("extVel"),
+    localVel: metersPerSecond("localVel"),
+    ekf_vel: metersPerSecond("ekf_vel"),
+    accSp: (v) => `${phys("accSp")(v).toFixed(2)} m/s/s`,
+    extTime: (v) => `${phys("extTime")(v).toFixed(3)} ms`,
+    ekf_acc_b: (v) => `${phys("ekf_acc_b")(v).toFixed(3)} m/s/s`,
+    ekf_gyro_b: (v) => formatAngle(phys("ekf_gyro_b")(v), 3, "/s"),
     // legacy Euler attitude fields, logged in mrad
-    ekf_att: (v) => formatAngle((v / 1000) * (180 / Math.PI), 3),
-    extAtt: (v) => formatAngle((v / 1000) * (180 / Math.PI), 3),
+    ekf_att: (v) => formatAngle(phys("ekf_att")(v) * (180 / Math.PI), 3),
+    extAtt: (v) => formatAngle(phys("extAtt")(v) * (180 / Math.PI), 3),
 };
 
 /**
@@ -256,22 +259,18 @@ const INDIFLIGHT_FIELD_FORMATS = {
  * @returns {string | undefined} undefined if fieldName is not an Indiflight field
  */
 function decodeIndiflightFieldToFriendly(fieldName, value) {
-    const match = /^(\w+?)(?:\[(\d+)\])?$/.exec(fieldName);
-    if (!match || typeof value !== "number") {
+    if (typeof value !== "number") {
         return undefined;
     }
-    const name = match[1];
-    if (Object.hasOwn(INDIFLIGHT_FIELD_FORMATS, name)) {
-        return INDIFLIGHT_FIELD_FORMATS[name](value, Number(match[2] ?? 0));
+    const field = indiflightField(fieldName);
+    if (!field) {
+        return undefined;
+    }
+    if (Object.hasOwn(INDIFLIGHT_FIELD_FORMATS, field.name)) {
+        return INDIFLIGHT_FIELD_FORMATS[field.name](value, field.index);
     }
     // learner RLS diagnostics: motor_N_rls_*, fx_<axis>_rls_*
-    if (name.endsWith("_rls_lambda")) {
-        return (value / UNIT_FLOAT_TO_UNSIGNED16VB).toFixed(4);
-    }
-    if (name.endsWith("_rls_e_var")) {
-        return (value / (0.001 * 0xffff)).toExponential(3);
-    }
-    return undefined;
+    return field.name.endsWith("_rls_lambda") ? field.phys(value).toFixed(4) : field.phys(value).toExponential(3);
 }
 
 FlightLogFieldPresenter.presentFlags = function (flags, flagNames) {

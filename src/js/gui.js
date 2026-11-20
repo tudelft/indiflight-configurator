@@ -29,6 +29,7 @@ class GuiControl {
             "autotune",
             "blackbox_viewer",
             "simulation",
+            "flight_plotter",
         ];
 
         this.defaultAllowedTabs = [
@@ -50,6 +51,7 @@ class GuiControl {
             "sensors",
             "blackbox_viewer",
             "simulation",
+            "flight_plotter",
         ];
 
         this.defaultCloudBuildTabOptions = ["gps", "led_strip", "osd", "servos", "vtx", "flight_plan"];

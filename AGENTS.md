@@ -180,6 +180,25 @@ Add its `tab*` label in `locales/en/messages.json`. To switch tabs from code, ca
 `switchTab(key, { mode })` from `src/js/tab_switch.js`. To hand a log to the viewer, call
 `openLogInBlackboxViewer()` in `src/blackbox-viewer/vue_init.js`.
 
+## Flight Plotter tab
+- The plotting is done by the `flightplotter` npm package. It is a git dependency on the `js-version` branch of
+  tudelft/pyFlightPlotter, and the lockfile pins the commit. To pick up library changes, run
+  `npm install flightplotter@github:tudelft/pyFlightPlotter#js-version`. The library is generic, so put plotting
+  features there and keep Indiflight specifics here.
+- `FlightPlotterTab.vue` loads `flightplotter` and the layout with a dynamic `import()`. A static import pulls uPlot into
+  the tab registry and breaks jsdom test suites ("matchMedia is not a function").
+- The data path is `FlightLog` (the blackbox viewer's parser) → `flightLogToSI()` in `src/blackbox-viewer/flightlog_si.js`
+  (all fields in SI, angles in rad) → `indiflightPlot()` in `src/js/indiflight/flightPlotterLayout.js` (derived signals,
+  the fixed panels ported from `../indiflight/support/LogAnalysis/flightPlotter.py`, the craft from the motor count).
+- Indiflight scale factors live in `src/blackbox-viewer/indiflight_fields.js`. The viewer's value display
+  (`flightlog_fields_presenter.js`) and `flightlog_si.js` share that table, so change scalings there.
+  `indiflight_log_tools` v0.7.0 is the reference. The duplication with it is intentional until the definitions are
+  harmonised.
+- To hand a log over from code, call `useFlightPlotterStore().openLog(bytes, name)`, then
+  `switchTab("flight_plotter", { mode: "shared" })`. The Simulation tab does this.
+- The layout isn't editable (`editable: false`). Host controls (file name, log selector) are teleported into
+  `plotter.toolbarSlot`. The theme follows `.dark` on `<html>` through a MutationObserver.
+
 ## Release
 - The web version is the annotated tag `web-vX.Y.Z` (`git tag -a web-vX.Y.Z -m web-vX.Y.Z`).
   `vite.config.js` reads it for the footer.

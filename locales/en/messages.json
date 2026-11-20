@@ -513,6 +513,7 @@
     "tabAutotune": { "message": "Autotune" },
     "tabBlackboxViewer": { "message": "Blackbox Viewer", "description": "Navigation sidebar label for the Blackbox log viewer tab" },
     "tabSimulation": { "message": "Simulation", "description": "Navigation sidebar label for the software-in-the-loop simulation tab" },
+    "tabFlightPlotter": { "message": "Flight Plotter", "description": "Navigation sidebar label for the flight data plotter tab (time series and 3D view of a blackbox log)" },
     "autotuneImportTitle": { "message": "Blackbox Chirp Analysis" },
     "autotuneImportButton": { "message": "Import Blackbox Log" },
     "autotuneImportDescription": { "message": "Import a blackbox log recorded with debug_mode = CHIRP to analyze frequency response and compute PID recommendations." },
@@ -10288,6 +10289,30 @@
     },
     "simulationOpenInViewer": {
         "message": "Open {{name}} in Blackbox Viewer"
+    },
+    "simulationOpenInFlightPlotter": {
+        "message": "Open {{name}} in Flight Plotter"
+    },
+    "flightPlotterDrop": {
+        "message": "Drop a blackbox log here, or click to choose a file"
+    },
+    "flightPlotterDropHint": {
+        "message": "Indiflight .BFL logs. Shows the flight data panels and a 3D view of the craft; the log stays on this computer."
+    },
+    "flightPlotterOpen": {
+        "message": "Open…"
+    },
+    "flightPlotterLog": {
+        "message": "Log in this file"
+    },
+    "flightPlotterLoading": {
+        "message": "Reading log…"
+    },
+    "flightPlotterLoadFailed": {
+        "message": "Could not open the log"
+    },
+    "flightPlotterNoData": {
+        "message": "No readable flight data in this file"
     },
     "simulationEditNeedsToken": {
         "message": "The daemon runs with --no-token, so it refuses edited scripts: they run arbitrary Python with the firmware folder writable. Restart it with a token, or save the script in support/simulation."
