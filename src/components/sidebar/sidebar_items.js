@@ -1,6 +1,7 @@
 export const sidebarItems = [
     { key: "landing", mode: "disconnected", i18n: "tabLanding", icon: "i-lucide-home" },
     { key: "firmware_flasher", mode: "disconnected", i18n: "tabFirmwareFlasher", icon: "i-lucide-zap" },
+    { key: "simulation", mode: "shared", i18n: "tabSimulation", icon: "i-lucide-monitor-play" },
     { key: "help", mode: "disconnected", i18n: "tabHelp", icon: "i-lucide-help-circle" },
     { key: "preflight", mode: "disconnected", i18n: "tabPreflight", icon: "i-lucide-clipboard-check" },
     { key: "flight_plan", mode: "disconnected", i18n: "tabFlightPlan", icon: "i-lucide-route", expert: true },
@@ -39,7 +40,6 @@ export const sidebarItems = [
     { key: "onboard_logging", mode: "connected", i18n: "tabOnboardLogging", icon: "i-lucide-database" },
     { key: "autotune", mode: "shared", i18n: "tabAutotune", icon: "i-lucide-gauge", expert: true },
     { key: "blackbox_viewer", mode: "shared", i18n: "tabBlackboxViewer", icon: "i-lucide-line-chart" },
-    { key: "simulation", mode: "shared", i18n: "tabSimulation", icon: "i-lucide-monitor-play" },
 
     { key: "cli", mode: "cli", i18n: "tabCLI", icon: "i-lucide-terminal" },
 
