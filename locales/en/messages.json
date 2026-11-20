@@ -442,6 +442,14 @@
         "message": "Options",
         "description": "Tooltip for the options icon button in the sidebar footer."
     },
+    "sidebarCollapse": {
+        "message": "Collapse sidebar",
+        "description": "Tooltip for the sidebar footer button that shrinks the sidebar to an icon rail."
+    },
+    "sidebarExpand": {
+        "message": "Expand sidebar",
+        "description": "Tooltip for the sidebar footer button that restores the full-width sidebar."
+    },
     "sidebarToggleDarkMode": {
         "message": "Toggle dark / light mode",
         "description": "Tooltip for the dark mode toggle icon button in the sidebar footer."

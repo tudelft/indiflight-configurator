@@ -56,6 +56,18 @@
                 :class="{ 'mr-auto': !isCompact }"
             />
         </UTooltip>
+        <UTooltip v-if="sidebarCollapsible" :text="collapseLabel" :delay-duration="300">
+            <UButton
+                :icon="isCompact ? 'i-lucide-panel-left-open' : 'i-lucide-panel-left-close'"
+                variant="ghost"
+                color="neutral"
+                square
+                :aria-label="collapseLabel"
+                :aria-expanded="!isCompact"
+                @click="toggleSidebarCollapsed"
+                size="xs"
+            />
+        </UTooltip>
     </div>
     <OptionsDialog v-model="optionsOpen" />
     <LogDialog v-model="logOpen" />
@@ -84,6 +96,9 @@ const connectionStore = useConnectionStore();
 const sidebarExpanded = inject("sidebarExpanded", ref(true));
 const closeMobileSidebar = inject("closeMobileSidebar", () => {});
 const isCompact = computed(() => !sidebarExpanded.value);
+const sidebarCollapsible = inject("sidebarCollapsible", ref(false));
+const toggleSidebarCollapsed = inject("toggleSidebarCollapsed", () => {});
+const collapseLabel = computed(() => t(isCompact.value ? "sidebarExpand" : "sidebarCollapse"));
 const navMenuUi = computed(() => {
     const linkBase = "data-active:before:bg-primary/10 cursor-pointer";
     return {

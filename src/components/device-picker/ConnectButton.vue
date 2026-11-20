@@ -293,6 +293,17 @@ export default defineComponent({
     white-space: nowrap;
 }
 
+.tab_container--collapsed .sidebar-connect {
+    display: flex;
+    justify-content: center;
+}
+.tab_container--collapsed .sidebar-connect__label {
+    display: none;
+}
+.tab_container--collapsed .sidebar-connect__group {
+    width: auto !important;
+}
+
 @media (max-width: 1055px) {
     .sidebar-connect {
         display: flex;

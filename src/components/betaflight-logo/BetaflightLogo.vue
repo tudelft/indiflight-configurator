@@ -66,6 +66,16 @@ export default defineComponent({
     background-image: url(../../images/if_logo_light.svg);
 }
 
+.tab_container--collapsed .logo {
+    align-items: center;
+}
+.tab_container--collapsed .logo_image,
+.dark .tab_container--collapsed .logo_image {
+    width: 48px;
+    background-image: url(../../images/if_icon_noFrame_blue.svg);
+    background-position: center;
+}
+
 @media (max-width: 1055px) {
     .tab_container .logo {
         align-items: center;

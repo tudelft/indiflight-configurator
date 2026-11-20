@@ -18,7 +18,10 @@
                 <div class="mobile-topbar__spacer" aria-hidden="true"></div>
             </div>
             <div id="tab-content-container">
-                <div class="tab_container" :class="{ reveal: isMobileSidebarOpen }">
+                <div
+                    class="tab_container"
+                    :class="{ reveal: isMobileSidebarOpen, 'tab_container--collapsed': isSidebarUserCollapsed }"
+                >
                     <betaflight-logo
                         :configurator-version="CONFIGURATOR.getDisplayVersion()"
                         :firmware-version="FC.CONFIG.flightControllerVersion"
@@ -70,6 +73,7 @@ import MSPModule from "./js/msp.js";
 import PortUsageModule from "./js/port_usage.js";
 import CONFIGURATORModule from "./js/data_storage.js";
 import GUI from "./js/gui.js";
+import { get as getConfig, set as setConfig } from "./js/ConfigStorage.js";
 import { i18n } from "./js/localization";
 import {
     completeVueTabMount,
@@ -121,7 +125,10 @@ const isCompactBreakpoint = useMediaQuery(
     "(max-width: 575px), (max-width: 950px) and (max-height: 500px) and (orientation: landscape)",
 );
 const isMobileSidebarOpen = computed(() => isCompactBreakpoint.value && isRevealed.value);
-const isSidebarExpanded = computed(() => !sidebarNarrow.value || isRevealed.value);
+// Wide screens only: below 1055px the sidebar is already an icon rail (or a drawer on phones).
+const sidebarCollapsed = ref(Boolean(getConfig("sidebarCollapsed").sidebarCollapsed));
+const isSidebarUserCollapsed = computed(() => sidebarCollapsed.value && !sidebarNarrow.value);
+const isSidebarExpanded = computed(() => (!sidebarNarrow.value && !sidebarCollapsed.value) || isRevealed.value);
 
 // Auto-close the drawer when leaving the mobile drawer breakpoint.
 watch(isCompactBreakpoint, (compact) => {
@@ -173,6 +180,14 @@ const logoTooltip = computed(() => {
 });
 
 provide("sidebarExpanded", isSidebarExpanded);
+provide(
+    "sidebarCollapsible",
+    computed(() => !sidebarNarrow.value),
+);
+provide("toggleSidebarCollapsed", () => {
+    sidebarCollapsed.value = !sidebarCollapsed.value;
+    setConfig({ sidebarCollapsed: sidebarCollapsed.value });
+});
 provide("closeMobileSidebar", () => {
     if (isCompactBreakpoint.value) {
         isRevealed.value = false;
