@@ -221,7 +221,9 @@ export const useSimulationStore = defineStore("simulation", () => {
 
     /** Loopback URL of the job's Three.js visualization, once it answers */
     const visUrl = computed(() => {
-        if (!job.value?.visReady || !job.value.visPort) {
+        const port = job.value?.visPort;
+        // The port comes from the daemon; anything but a plain port number could point the iframe elsewhere
+        if (!job.value?.visReady || !Number.isInteger(port) || port < 1 || port > 65535) {
             return null;
         }
         let host = "127.0.0.1";
@@ -231,7 +233,7 @@ export const useSimulationStore = defineStore("simulation", () => {
             // malformed daemon URL: the connection would have failed anyway
         }
         // URL.hostname keeps the brackets of an IPv6 literal
-        return `http://${host}:${job.value.visPort}/`;
+        return `http://${host}:${port}/`;
     });
 
     return {
