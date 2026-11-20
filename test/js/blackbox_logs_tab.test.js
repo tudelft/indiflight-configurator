@@ -1,11 +1,18 @@
-import { createApp, nextTick } from "vue";
+import { createApp, h, nextTick } from "vue";
 import { createPinia, setActivePinia } from "pinia";
 import i18next from "i18next";
 import I18NextVue from "i18next-vue";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { TooltipProvider } from "reka-ui";
 import BlackboxLogsTab from "../../src/components/tabs/BlackboxLogsTab.vue";
 import CONFIGURATOR from "../../src/js/data_storage";
 import FileSystem from "../../src/js/FileSystem";
+import { switchTab } from "../../src/js/tab_switch";
+import { openLogInBlackboxViewer } from "../../src/blackbox-viewer/vue_init";
+import { useFlightPlotterStore } from "../../src/stores/flightPlotter";
+
+vi.mock("../../src/js/tab_switch", () => ({ switchTab: vi.fn() }));
+vi.mock("../../src/blackbox-viewer/vue_init", () => ({ openLogInBlackboxViewer: vi.fn() }));
 
 async function flush() {
     for (let i = 0; i < 10; i++) {
@@ -25,7 +32,8 @@ describe("BlackboxLogsTab (virtual mode)", () => {
         document.body.appendChild(container);
         const pinia = createPinia();
         setActivePinia(pinia);
-        app = createApp(BlackboxLogsTab);
+        // UTooltip needs the provider UApp gives it in the app
+        app = createApp({ render: () => h(TooltipProvider, null, () => h(BlackboxLogsTab)) });
         app.use(pinia).use(I18NextVue, { i18next });
         app.mount(container);
         // the virtual FC simulates a flash scan before the first listing succeeds
@@ -38,6 +46,7 @@ describe("BlackboxLogsTab (virtual mode)", () => {
         container.remove();
         CONFIGURATOR.virtualMode = false;
         vi.restoreAllMocks();
+        vi.clearAllMocks();
     });
 
     it("lists the virtual flash logs on mount and names the storage", () => {
@@ -108,6 +117,48 @@ describe("BlackboxLogsTab (virtual mode)", () => {
         expect(abortFile).toHaveBeenCalledWith("writable", { name: "LOG00001.BFL" });
         expect(closeFile).not.toHaveBeenCalled();
         expect(container.textContent).toContain("blackboxLogsCancelled");
+        expect(container.textContent).toContain("blackboxLogsStateCancelled");
+    });
+
+    function openButton(name, label) {
+        const row = [...container.querySelectorAll("tbody tr")].find((r) => r.textContent.includes(name));
+        return row.querySelector(`button[aria-label^="${label}"]`);
+    }
+
+    it("reads a log into memory and opens it in the blackbox viewer without saving it", async () => {
+        const pickSaveFile = vi.spyOn(FileSystem, "pickSaveFile");
+        openButton("LOG00003.BFL", "blackboxLogsOpenInViewer").click();
+        await vi.waitFor(() => expect(switchTab).toHaveBeenCalled(), { timeout: 3000 });
+
+        expect(switchTab).toHaveBeenCalledWith("blackbox_viewer", { mode: "shared" });
+        const [bytes, name] = openLogInBlackboxViewer.mock.calls[0];
+        expect(name).toBe("LOG00003.BFL");
+        expect(bytes).toBeInstanceOf(Uint8Array);
+        expect(bytes.byteLength).toBe(42_123);
+        expect(pickSaveFile).not.toHaveBeenCalled();
+    });
+
+    it("opens a log in the flight plotter", async () => {
+        openButton("LOG00001.BFL", "blackboxLogsOpenInFlightPlotter").click();
+        await vi.waitFor(() => expect(switchTab).toHaveBeenCalled(), { timeout: 3000 });
+
+        expect(switchTab).toHaveBeenCalledWith("flight_plotter", { mode: "shared" });
+        const pending = useFlightPlotterStore().pendingLog;
+        expect(pending.name).toBe("LOG00001.BFL");
+        expect(pending.data.byteLength).toBe(183_476);
+        expect(openLogInBlackboxViewer).not.toHaveBeenCalled();
+    });
+
+    it("does not hand over a log whose read was cancelled", async () => {
+        openButton("LOG00001.BFL", "blackboxLogsOpenInViewer").click();
+        await vi.waitFor(() =>
+            [...container.querySelectorAll("button")].find((b) => b.textContent.includes("blackboxLogsCancel")).click(),
+        );
+        await vi.waitFor(() => expect(container.textContent).toContain("blackboxLogsCancelled"), { timeout: 3000 });
+        await flush();
+
+        expect(openLogInBlackboxViewer).not.toHaveBeenCalled();
+        expect(switchTab).not.toHaveBeenCalled();
         expect(container.textContent).toContain("blackboxLogsStateCancelled");
     });
 
