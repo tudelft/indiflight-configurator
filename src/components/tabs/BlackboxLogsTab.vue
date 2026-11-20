@@ -148,6 +148,32 @@
                         <span v-if="row.original.timestamp">{{ formatTimestamp(row.original.timestamp) }}</span>
                         <span v-else class="text-dimmed">{{ $t("blackboxLogsDateUnknown") }}</span>
                     </template>
+                    <template #open-cell="{ row }">
+                        <div class="flex gap-1">
+                            <UTooltip :text="$t('blackboxLogsOpenInViewer', { name: row.original.name })">
+                                <UButton
+                                    size="xs"
+                                    variant="soft"
+                                    icon="i-lucide-line-chart"
+                                    :aria-label="$t('blackboxLogsOpenInViewer', { name: row.original.name })"
+                                    :loading="opening === `viewer-${row.original.name}`"
+                                    :disabled="busy"
+                                    @click="openIn('viewer', row.original)"
+                                />
+                            </UTooltip>
+                            <UTooltip :text="$t('blackboxLogsOpenInFlightPlotter', { name: row.original.name })">
+                                <UButton
+                                    size="xs"
+                                    variant="soft"
+                                    icon="i-lucide-activity"
+                                    :aria-label="$t('blackboxLogsOpenInFlightPlotter', { name: row.original.name })"
+                                    :loading="opening === `plotter-${row.original.name}`"
+                                    :disabled="busy"
+                                    @click="openIn('plotter', row.original)"
+                                />
+                            </UTooltip>
+                        </div>
+                    </template>
                     <template #state-cell="{ row }">
                         <span v-if="results[row.original.name]" :class="stateClass(results[row.original.name].state)">
                             {{ stateLabel(results[row.original.name]) }}
@@ -221,6 +247,9 @@ import UiBox from "@/components/elements/UiBox.vue";
 import GUI from "@/js/gui";
 import { bytesToSize } from "@/js/utils/common";
 import { useBlackboxLogs } from "@/composables/useBlackboxLogs";
+import { switchTab } from "@/js/tab_switch";
+import { openLogInBlackboxViewer } from "@/blackbox-viewer/vue_init";
+import { useFlightPlotterStore } from "@/stores/flightPlotter";
 
 const { t } = useTranslation();
 const {
@@ -246,6 +275,7 @@ const {
     setAllSelected,
     refresh,
     downloadSelected,
+    readLog,
     eraseAll,
     load,
     cancel,
@@ -257,6 +287,29 @@ const confirmEraseOpen = ref(false);
 function confirmErase() {
     confirmEraseOpen.value = false;
     eraseAll();
+}
+
+const flightPlotter = useFlightPlotterStore();
+const opening = ref("");
+
+// Read the log into memory and hand it over, without saving it to disk.
+async function openIn(target, entry) {
+    opening.value = `${target}-${entry.name}`;
+    try {
+        const bytes = await readLog(entry);
+        if (!bytes) {
+            return;
+        }
+        if (target === "viewer") {
+            openLogInBlackboxViewer(bytes, entry.name);
+            switchTab("blackbox_viewer", { mode: "shared" });
+        } else {
+            flightPlotter.openLog(bytes, entry.name);
+            switchTab("flight_plotter", { mode: "shared" });
+        }
+    } finally {
+        opening.value = "";
+    }
 }
 
 const storageLabel = computed(() => {
@@ -271,6 +324,7 @@ const columns = computed(() => [
     { accessorKey: "name", header: t("blackboxLogsColumnName") },
     { accessorKey: "size", header: t("blackboxLogsColumnSize") },
     { accessorKey: "timestamp", header: t("blackboxLogsColumnDate") },
+    { id: "open", header: t("blackboxLogsColumnOpen") },
     { id: "state", header: t("blackboxLogsColumnStatus") },
 ]);
 

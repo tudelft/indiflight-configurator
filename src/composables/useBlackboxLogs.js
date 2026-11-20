@@ -592,6 +592,62 @@ export function useBlackboxLogs() {
         results.value = { ...results.value, [name]: { state, received } };
     }
 
+    function trackChunk(session, received, byteLength) {
+        session.doneBytes += byteLength;
+        const elapsed = (performance.now() - session.startTime) / 1000;
+        progress.value = {
+            ...progress.value,
+            fileBytes: received,
+            doneBytes: session.doneBytes,
+            rate: elapsed > 0 ? session.doneBytes / elapsed : 0,
+        };
+    }
+
+    // Shared by downloadSelected and readLog; `downloading` must already be set.
+    function startTransfer(entries) {
+        cancelRequested = false;
+        message.value = null;
+        results.value = Object.fromEntries(entries.map((e) => [e.name, { state: "queued", received: 0 }]));
+        connectionStore.pauseLiveData();
+    }
+
+    function setFileProgress(entries, index, session) {
+        const entry = entries[index];
+        progress.value = {
+            fileIndex: index,
+            fileCount: entries.length,
+            fileName: entry.name,
+            fileSize: entry.size,
+            fileBytes: 0,
+            doneBytes: session.doneBytes,
+            totalBytes: entries.reduce((sum, e) => sum + e.size, 0),
+            rate: progress.value?.rate ?? 0,
+        };
+    }
+
+    function transferFailed(error, entries) {
+        if (error instanceof BlackboxLogError && error.kind === "unsupported") {
+            unsupported.value = true;
+        }
+        const cancelled = error instanceof BlackboxLogError && error.kind === "cancelled";
+        if (!cancelled && !isMspCancelled(error)) {
+            console.error("Blackbox log download failed", error);
+        }
+        for (const entry of entries) {
+            if (results.value[entry.name]?.state === "queued") {
+                setResult(entry.name, "cancelled");
+            }
+        }
+        message.value = { type: cancelled ? "info" : "error", ...describeError(error) };
+    }
+
+    async function endTransfer() {
+        downloading.value = false;
+        progress.value = null;
+        connectionStore.resumeLiveData();
+        await close();
+    }
+
     async function downloadOne(entry, target, session) {
         const file = target ?? (await FileSystem.createFileInDirectory(session.directory, entry.name));
         const writable = await FileSystem.openFile(file);
@@ -606,14 +662,7 @@ export function useBlackboxLogs() {
                 onChunk: async (data) => {
                     await FileSystem.writeChunck(writable, new Blob([data]));
                     received += data.byteLength;
-                    session.doneBytes += data.byteLength;
-                    const elapsed = (performance.now() - session.startTime) / 1000;
-                    progress.value = {
-                        ...progress.value,
-                        fileBytes: received,
-                        doneBytes: session.doneBytes,
-                        rate: elapsed > 0 ? session.doneBytes / elapsed : 0,
-                    };
+                    trackChunk(session, received, data.byteLength);
                 },
             });
             await FileSystem.closeFile(writable);
@@ -660,26 +709,13 @@ export function useBlackboxLogs() {
             return;
         }
 
-        cancelRequested = false;
-        message.value = null;
-        results.value = Object.fromEntries(entries.map((e) => [e.name, { state: "queued", received: 0 }]));
-        const totalBytes = entries.reduce((sum, e) => sum + e.size, 0);
+        startTransfer(entries);
         const mismatches = [];
         const failures = [];
-        connectionStore.pauseLiveData();
 
         try {
             for (const [index, entry] of entries.entries()) {
-                progress.value = {
-                    fileIndex: index,
-                    fileCount: entries.length,
-                    fileName: entry.name,
-                    fileSize: entry.size,
-                    fileBytes: 0,
-                    doneBytes: session.doneBytes,
-                    totalBytes,
-                    rate: progress.value?.rate ?? 0,
-                };
+                setFileProgress(entries, index, session);
                 try {
                     if (!(await downloadOne(entry, session.files.get(entry.name), session))) {
                         mismatches.push(entry.name);
@@ -702,25 +738,60 @@ export function useBlackboxLogs() {
                 message.value = { type: "success", key: "blackboxLogsDownloadDone", params: { count: entries.length } };
             }
         } catch (error) {
-            if (error instanceof BlackboxLogError && error.kind === "unsupported") {
-                unsupported.value = true;
-            }
-            const cancelled = error instanceof BlackboxLogError && error.kind === "cancelled";
-            if (!cancelled && !isMspCancelled(error)) {
-                console.error("Blackbox log download failed", error);
-            }
-            for (const entry of entries) {
-                if (results.value[entry.name]?.state === "queued") {
-                    setResult(entry.name, "cancelled");
-                }
-            }
-            message.value = { type: cancelled ? "info" : "error", ...describeError(error) };
+            transferFailed(error, entries);
         } finally {
-            downloading.value = false;
-            progress.value = null;
-            connectionStore.resumeLiveData();
-            await close();
+            await endTransfer();
         }
+    }
+
+    /**
+     * Read one log into memory, to hand it to the viewer or plotter without saving it first. A size mismatch shows in
+     * the file's status, but the data is still returned.
+     *
+     * @returns {Promise<Uint8Array|null>} the log, or null when the read failed or was cancelled
+     */
+    async function readLog(entry) {
+        if (busy.value) {
+            return null;
+        }
+        downloading.value = true;
+        startTransfer([entry]);
+        const session = { startTime: performance.now(), doneBytes: 0 };
+        setFileProgress([entry], 0, session);
+        setResult(entry.name, "downloading");
+        const chunks = [];
+        let received = 0;
+        try {
+            await readBlackboxLogFile({
+                read: api().read,
+                name: entry.name,
+                isCancelled: () => cancelRequested,
+                onChunk: (data) => {
+                    // Copy: the reply's buffer is not ours to keep.
+                    chunks.push(new Uint8Array(data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength)));
+                    received += data.byteLength;
+                    trackChunk(session, received, data.byteLength);
+                },
+            });
+        } catch (error) {
+            setResult(
+                entry.name,
+                error instanceof BlackboxLogError && error.kind === "cancelled" ? "cancelled" : "failed",
+                received,
+            );
+            transferFailed(error, [entry]);
+            return null;
+        } finally {
+            await endTransfer();
+        }
+        setResult(entry.name, received === entry.size ? "done" : "mismatch", received);
+        const bytes = new Uint8Array(received);
+        let offset = 0;
+        for (const chunk of chunks) {
+            bytes.set(chunk, offset);
+            offset += chunk.byteLength;
+        }
+        return bytes;
     }
 
     /** Erase all logs on the storage in use, then re-list. Keeps polling even if the tab is left meanwhile. */
@@ -831,6 +902,7 @@ export function useBlackboxLogs() {
         refreshSummary,
         refresh,
         downloadSelected,
+        readLog,
         eraseAll,
         load,
         cancel,

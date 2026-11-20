@@ -4385,6 +4385,15 @@
     "blackboxLogsColumnStatus": {
         "message": "Status"
     },
+    "blackboxLogsColumnOpen": {
+        "message": "Open in"
+    },
+    "blackboxLogsOpenInViewer": {
+        "message": "Open {{name}} in Blackbox Viewer"
+    },
+    "blackboxLogsOpenInFlightPlotter": {
+        "message": "Open {{name}} in Flight Plotter"
+    },
     "blackboxLogsDateUnknown": {
         "message": "—",
         "description": "Shown instead of a date when the log has no valid timestamp (flash logs, or the flight controller had no clock time)"
