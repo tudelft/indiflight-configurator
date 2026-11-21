@@ -3,62 +3,10 @@
  * (IndiflightPlotter / IndiflightViewport in the firmware repo's support/LogAnalysis), on the SI
  * columns from flightLogToSI().
  */
-import {
-    Craft3D,
-    bitChangeEvents,
-    derivative,
-    lowpassFiltfilt,
-    multirotor,
-    noseArrow,
-    quadrotor,
-    rotateByQuaternion,
-    sampleRate,
-    tailsitter,
-} from "flightplotter";
+import { bitChangeEvents, derivative, lowpassFiltfilt, rotateByQuaternion, sampleRate } from "flightplotter";
+import { craftChoices, detectCraft, extraHeaders } from "./flightPlotterCrafts";
 
-/** flightPlotter.py's Hexarotor */
-function hexarotor(l = 0.4, R = 0.1) {
-    const r = l / 2;
-    const s = 0.8660254037844386;
-    const c = new Craft3D([noseArrow(l)]);
-    for (const xyz of [
-        [r, 0, 0],
-        [0.5 * r, s * r, 0],
-        [-0.5 * r, s * r, 0],
-        [-r, 0, 0],
-        [-0.5 * r, -s * r, 0],
-        [0.5 * r, -s * r, 0],
-    ]) {
-        c.addRotor({ xyz, axis: [0, 0, -1], R });
-    }
-    return c;
-}
-
-const count = (columns, name) => {
-    let i = 0;
-    while (columns[`${name}[${i}]`]) {
-        i++;
-    }
-    return i;
-};
-
-/**
- * Craft from the number of logged motors: 2 tailsitter (2 rotors, 2 servos), 4 quad, 6 hex.
- * @returns {{type: string, Nr: number, Ns: number, craft: Craft3D}}
- */
-export function detectCraft(columns) {
-    const nMotor = count(columns, "motor");
-    if (nMotor === 2 && count(columns, "u") >= 4) {
-        return { type: "tailsitter", Nr: 2, Ns: 2, craft: tailsitter() };
-    }
-    if (nMotor === 6) {
-        return { type: "hexarotor", Nr: 6, Ns: 0, craft: hexarotor() };
-    }
-    if (nMotor === 4) {
-        return { type: "quadrotor", Nr: 4, Ns: 0, craft: quadrotor() };
-    }
-    return { type: "multirotor", Nr: Math.max(1, nMotor), Ns: 0, craft: multirotor(Math.max(1, nMotor)) };
-}
+export { detectCraft, extraHeaders };
 
 const vec = (columns, name, n = 3) => {
     const a = [];
@@ -125,12 +73,11 @@ function panel(row, col, title, ylabel, styles, labels, { light, solid, dashed, 
     };
 }
 
-/** IndiflightPlotter._populate */
-function panels(columns, Nr, Ns) {
-    const N = Nr + Ns;
+/** IndiflightPlotter._populate; motor and servo signals by INDI actuator index */
+function panels(columns, { Nr, Ns, act }) {
     const has = (c) => !!columns[c];
-    const motors = range(0, Nr);
-    const servos = range(Nr, N);
+    const motors = act.motorActs.length === Nr ? act.motorActs : range(0, Nr);
+    const servos = act.servoActs.length === Ns ? act.servoActs : range(Nr, Nr + Ns);
     const P = [
         panel(0, 2, "Body Angular Rates", "Angular Rate [rad/s]", ["Raw", "Filtered", "Setpoint"], RPY, {
             light: v3("gyroADCafterRpm"),
@@ -172,7 +119,7 @@ function panels(columns, Nr, Ns) {
                 "Motor Speeds",
                 "Motor Speed [rad/s]",
                 ["Raw", "Onboard filt.", null],
-                motors.map((i) => `Motor ${i + 1}`),
+                motors.map((_, k) => `Motor ${k + 1}`),
                 {
                     light: motors.map((i) => `omegaUnfiltered[${i}]`),
                     solid: motors.map((i) => `omega[${i}]`),
@@ -253,19 +200,10 @@ function panels(columns, Nr, Ns) {
     return P;
 }
 
-/** IndiflightViewport */
-function viewport(columns, { craft, Nr, Ns }) {
+/** IndiflightViewport, without the craft-dependent part (see craftChoices) */
+function viewport(columns) {
     const refs = (name, n) => (vec(columns, name, n) ? range(0, n).map((i) => `${name}[${i}]`) : undefined);
-    let omegaMax = 0;
-    for (let i = 0; i < Nr; i++) {
-        for (const v of columns[`omega[${i}]`] ?? []) {
-            if (v > omegaMax) {
-                omegaMax = v;
-            }
-        }
-    }
     return {
-        craft,
         att: refs("quat", 4),
         attSet: refs("quatSp", 4),
         attMeas: refs("localQuat", 4),
@@ -277,10 +215,6 @@ function viewport(columns, { craft, Nr, Ns }) {
         velMeas: refs("localVel", 3),
         acc: refs("accI", 3),
         accSet: refs("accSp", 3),
-        rotor: range(0, Nr).map((i) => [`omega[${i}]`, 1 / (omegaMax + 1e-6)]), // normalized for visualization
-        rotorSet: range(0, Nr).map((i) => `u[${i}]`),
-        surface: Ns ? refs("servo_feedback", Ns) : undefined,
-        surfaceSet: Ns ? range(Nr, Nr + Ns).map((i) => [`u[${i}]`, (100 * Math.PI) / 180]) : undefined,
         interpolation: "previous",
     };
 }
@@ -289,10 +223,13 @@ function viewport(columns, { craft, Nr, Ns }) {
  * FlightPlotter options for an Indiflight log.
  * @param {{time: Float64Array, columns: Object<string, ArrayLike<number>>, events: object[]}} si  from flightLogToSI()
  * @param {string[]} modeNames  flight mode name per bit of flightModeFlags
+ * @param {Object<string, string>} [headers]  header values the parser doesn't know (extraHeaders()), for the INDI
+ *                                            actuator setup
  */
-export function indiflightPlot(si, modeNames) {
+export function indiflightPlot(si, modeNames, headers = {}) {
     const { time, columns } = si;
-    const craft = detectCraft(columns);
+    const craft = detectCraft(columns, headers);
+    const crafts = craftChoices(columns, craft);
     addDerived(time, columns, craft.Ns);
     const events = [...si.events];
     if (columns.flightModeFlags) {
@@ -301,7 +238,8 @@ export function indiflightPlot(si, modeNames) {
     return {
         craft,
         data: { time, columns, events },
-        panels: panels(columns, craft.Nr, craft.Ns),
-        viewport: viewport(columns, craft),
+        panels: panels(columns, craft),
+        viewport: { ...viewport(columns), ...crafts[0].viewport },
+        crafts,
     };
 }

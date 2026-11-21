@@ -138,11 +138,15 @@ async function showLog(index) {
             throw new Error(flightLog.getLogError(index) || $t("flightPlotterNoData"));
         }
         // uPlot and three.js load with the first log, not with the app
-        const [{ FlightPlotter }, { indiflightPlot }] = await Promise.all([
+        const [{ FlightPlotter }, { indiflightPlot, extraHeaders }] = await Promise.all([
             import("flightplotter"),
             import("@/js/indiflight/flightPlotterLayout"),
         ]);
-        const plot = indiflightPlot(flightLogToSI(flightLog), FLIGHT_LOG_FLIGHT_MODE_NAME);
+        const plot = indiflightPlot(
+            flightLogToSI(flightLog),
+            FLIGHT_LOG_FLIGHT_MODE_NAME,
+            extraHeaders(flightLog.getSysConfig()),
+        );
         // detach the teleported controls before their target goes away
         toolbarSlot.value = null;
         await nextTick();
@@ -151,6 +155,7 @@ async function showLog(index) {
             data: plot.data,
             panels: plot.panels,
             viewport: plot.viewport,
+            crafts: plot.crafts,
             editable: false,
             theme: hostTheme(),
         });

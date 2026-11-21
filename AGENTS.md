@@ -181,9 +181,9 @@ Add its `tab*` label in `locales/en/messages.json`. To switch tabs from code, ca
 `openLogInBlackboxViewer()` in `src/blackbox-viewer/vue_init.js`.
 
 ## Flight Plotter tab
-- The plotting is done by the `flightplotter` npm package. It is a git dependency on the `js-version` branch of
-  tudelft/pyFlightPlotter, and the lockfile pins the commit. To pick up library changes, run
-  `npm install flightplotter@github:tudelft/pyFlightPlotter#js-version`. The library is generic, so put plotting
+- The plotting is done by the `flightplotter` npm package, a git dependency on a release tag of
+  tudelft/pyFlightPlotter (`#vX.Y.Z` in `package.json`). To pick up library changes, tag a release there and run
+  `npm install flightplotter@github:tudelft/pyFlightPlotter#vX.Y.Z`. The library is generic, so put plotting
   features there and keep Indiflight specifics here.
 - To develop both together, run `FLIGHTPLOTTER_DIR=../pyFlightPlotter npm run dev`. `vite.config.js` then aliases
   `flightplotter` to that checkout instead of the pinned package.
@@ -191,7 +191,14 @@ Add its `tab*` label in `locales/en/messages.json`. To switch tabs from code, ca
   the tab registry and breaks jsdom test suites ("matchMedia is not a function").
 - The data path is `FlightLog` (the blackbox viewer's parser) → `flightLogToSI()` in `src/blackbox-viewer/flightlog_si.js`
   (all fields in SI, angles in rad) → `indiflightPlot()` in `src/js/indiflight/flightPlotterLayout.js` (derived signals,
-  the fixed panels ported from `../indiflight/support/LogAnalysis/flightPlotter.py`, the craft from the motor count).
+  the fixed panels ported from `../indiflight/support/LogAnalysis/flightPlotter.py`) and `flightPlotterCrafts.js`
+  (the craft choices for the 3D view).
+- Logged motor k is the k-th INDI actuator flagged as a motor. It is in INDI or Betaflight mixer order, never output pin
+  order: `motor_output_reordering` only remaps pins, and it isn't in the log. Neither are the mixer type and
+  `yaw_motors_reversed`. So the craft choices are: geometry from the INDI G1 matrix in the header (but the firmware
+  writes only 4 actuators per `indi_act_*` array), Betaflight presets with props in and out, and rings. With a
+  partial header, the candidates that match the covered rotors go first. Users fix the rest in the 3D view's Rotors…
+  dialog.
 - Indiflight scale factors live in `src/blackbox-viewer/indiflight_fields.js`. The viewer's value display
   (`flightlog_fields_presenter.js`) and `flightlog_si.js` share that table, so change scalings there.
   `indiflight_log_tools` v0.7.0 is the reference. The duplication with it is intentional until the definitions are
