@@ -1,5 +1,6 @@
 /// <reference types="vitest" />
 import { defineConfig, normalizePath } from "vite";
+import { cspPlugin } from "./csp.config.js";
 import vue from "@vitejs/plugin-vue";
 import path from "node:path";
 import { readFileSync, existsSync } from "node:fs";
@@ -218,6 +219,7 @@ export default defineConfig({
             },
         }),
         stripManifestFromSecondaryEntriesPlugin(),
+        cspPlugin(),
     ],
     // Absolute root so @nuxt/ui's template aliases (#build/ui.css, etc.) resolve to
     // absolute paths; a relative root yields relative aliases and Vite warns about duplicated modules.

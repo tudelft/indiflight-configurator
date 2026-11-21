@@ -24,6 +24,9 @@ jobs:
       - run: npm ci
 
       - run: npm run build
+        env:
+          # Content-Security-Policy <meta> tag, web deploy only (see csp.config.js)
+          INDIFLIGHT_CSP: "1"
 
       - uses: actions/upload-artifact@v4
         with:

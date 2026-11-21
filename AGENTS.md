@@ -218,6 +218,15 @@ public site from fetching private-network hosts. `Cross-Origin-Opener-Policy: sa
 `window.opener`, and the handoff then silently does nothing. The app must not send it, and the external page may
 send at most `same-origin-allow-popups`.
 
+## Content-Security-Policy
+`csp.config.js` holds the web deploy's policy. It is emitted as a `<meta>` tag only when `INDIFLIGHT_CSP=1` (set in
+`deploy-web.yml`); Tauri and Android builds don't get it. A new network endpoint needs its origin added there, or
+the browser blocks it. Test with `INDIFLIGHT_CSP=1 npx vite build && npx vite preview` and watch the console for CSP
+violations. `script-src` stays `'self'`, so no code generation at runtime (`eval`, `new Function`, runtime Vue
+templates, schema compilers such as ajv/djv). That is why the root app uses a render function and VTX files are
+checked by `src/js/utils/jsonSchemaLite.js`. nginx sends only the header-only parts (`frame-ancestors`), and must
+not send `Cross-Origin-Opener-Policy: same-origin`, which breaks the website log handoff.
+
 ## Release
 - The web version is the annotated tag `web-vX.Y.Z` (`git tag -a web-vX.Y.Z -m web-vX.Y.Z`).
   `vite.config.js` reads it for the footer.
