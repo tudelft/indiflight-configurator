@@ -64,6 +64,13 @@ import { useFlightPlotterStore } from "@/stores/flightPlotter";
 import { FlightLog } from "@/blackbox-viewer/flightlog";
 import { flightLogToSI } from "@/blackbox-viewer/flightlog_si";
 import { FLIGHT_LOG_FLIGHT_MODE_NAME } from "@/blackbox-viewer/flightlog_fielddefs";
+import { isAndroid, isIOS, isTauri } from "@/js/utils/checkCompatibility";
+
+// tabs pop out into browser windows; the native shells don't open those
+const POPOUT_URL =
+    isTauri() || isAndroid() || isIOS()
+        ? null
+        : new URL("components/tabs/flight-plotter-popout/flight_plotter_popout.html", document.baseURI).href;
 
 const $t = inject("$t", (key, params) => i18n.getMessage(key, params));
 const store = useFlightPlotterStore();
@@ -156,6 +163,7 @@ async function showLog(index) {
             panels: plot.panels,
             viewport: plot.viewport,
             crafts: plot.crafts,
+            popoutUrl: POPOUT_URL,
             layoutName: `indiflight-${plot.craft.type}-layout`,
             // the user's edits, kept per craft type; the toolbar's reset returns to the built-in layout
             layout: adaptSavedLayout(store.savedLayout(plot.craft.type), plot),

@@ -208,6 +208,9 @@ Add its `tab*` label in `locales/en/messages.json`. To switch tabs from code, ca
 - The layout is editable: panels, tabs, the craft and its rotors, plus JSON export and import. The format is the
   library's (`parseLayout()` in its `layout.js`). `indiflightPlot()` supplies the initial layout, which the toolbar's
   reset button returns to. The user's layout is saved per craft type in `src/stores/flightPlotter.js`.
+- Tabs pop out into windows that load `src/components/tabs/flight-plotter-popout/flight_plotter_popout.html`, a second
+  Vite entry. It joins the main window's plotter session, so it needs no data of its own. Pop-outs are off in Tauri
+  and Capacitor builds, because those shells don't open such windows.
 - Host controls (file name, log selector) are teleported into `plotter.toolbarSlot`. The theme follows `.dark` on
   `<html>` through a MutationObserver.
 

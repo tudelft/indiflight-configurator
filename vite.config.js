@@ -172,6 +172,10 @@ export default defineConfig({
             input: {
                 main: resolve(__dirname, "src/index.html"),
                 receiver_msp: resolve(__dirname, "src/components/tabs/receiver-msp/receiver_msp.html"),
+                flight_plotter_popout: resolve(
+                    __dirname,
+                    "src/components/tabs/flight-plotter-popout/flight_plotter_popout.html",
+                ),
             },
         },
     },
