@@ -3,7 +3,7 @@
 import "../js/localization.js";
 import "../js/injected_methods";
 import i18next from "i18next";
-import { createApp, reactive } from "vue";
+import { createApp, h, reactive } from "vue";
 import ui from "@nuxt/ui/vue-plugin";
 import I18NextVue from "i18next-vue";
 import FC from "../js/fc.js";
@@ -12,6 +12,7 @@ import DeviceHandler from "../js/device_handler.js";
 import PortUsage from "../js/port_usage.js";
 import CONFIGURATOR from "../js/data_storage.js";
 import { BetaflightComponents } from "../js/vue_components.js";
+import App from "../App.vue";
 import { getNuxtUiRouter } from "../js/nuxt_ui_router.js";
 import { pinia } from "../js/pinia_instance.js";
 import { get as getConfig } from "../js/ConfigStorage.js";
@@ -50,9 +51,8 @@ i18next.on("initialized", function () {
     console.log("i18n initialized, starting Vue framework");
 
     const app = createApp({
-        setup() {
-            return betaflightModel;
-        },
+        // A render function instead of the in-DOM template: compiling that at runtime needs eval, which the CSP blocks.
+        render: () => h(App),
     });
 
     app.use(pinia)

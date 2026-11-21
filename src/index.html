@@ -17,10 +17,7 @@
         <meta name="theme-color" content="#00a6d6" />
     </head>
     <body>
-        <!-- Every dialog lives in Vue now (see src/components/dialogs). Do not add markup after
-             <app></app>: it would be parsed as slot content and dropped, since App.vue has no slot. -->
-        <div id="main-wrapper">
-            <app></app>
-        </div>
+        <!-- Vue renders App.vue here (src/components/init.js); markup placed inside is replaced. -->
+        <div id="main-wrapper"></div>
     </body>
 </html>
