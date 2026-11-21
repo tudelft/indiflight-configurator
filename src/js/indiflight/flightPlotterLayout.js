@@ -16,18 +16,28 @@ const vec = (columns, name, n = 3) => {
     return a.every(Boolean) ? a : null;
 };
 
-/** the signals IndiflightPlotter computes: body velocities, inertial acceleration, servo derivatives */
+/**
+ * The signals IndiflightPlotter computes: body velocities, inertial acceleration, servo derivatives.
+ * @returns {Object<string, string>} how each came about, for the plotter's tooltips
+ */
 function addDerived(time, columns, Ns) {
+    const descriptions = {};
+    const AXES = ["x", "y", "z"];
     const quat = vec(columns, "quat", 4);
     if (quat) {
-        for (const [src, dst] of [
-            ["vel", "velB"],
-            ["localVel", "localVelB"],
-            ["velSp", "velSpB"],
+        for (const [src, dst, what] of [
+            ["vel", "velB", "Velocity estimate"],
+            ["localVel", "localVelB", "Mocap velocity"],
+            ["velSp", "velSpB", "Velocity setpoint"],
         ]) {
             const v = vec(columns, src);
             if (v) {
-                rotateByQuaternion(quat, v, true).forEach((a, i) => (columns[`${dst}[${i}]`] = a));
+                rotateByQuaternion(quat, v, true).forEach((a, i) => {
+                    columns[`${dst}[${i}]`] = a;
+                    descriptions[`${dst}[${i}]`] =
+                        `Computed here: ${what} ${src}[0..2], rotated world → body (FRD) with the onboard attitude ` +
+                        `estimate quat; body ${AXES[i]}.`;
+                });
             }
         }
         const acc = vec(columns, "accSmooth");
@@ -36,7 +46,12 @@ function addDerived(time, columns, Ns) {
             for (let i = 0; i < accI[2].length; i++) {
                 accI[2][i] += 9.81;
             }
-            accI.forEach((a, i) => (columns[`accI[${i}]`] = a));
+            accI.forEach((a, i) => {
+                columns[`accI[${i}]`] = a;
+                descriptions[`accI[${i}]`] =
+                    "Computed here: specific force accSmooth[0..2], rotated body → world (NED) with quat, plus " +
+                    `gravity (9.81 m/s² on z), i.e. the inertial acceleration; world ${AXES[i]}.`;
+            });
         }
     }
     const servo = Ns > 0 ? vec(columns, "servo_feedback", Ns) : null;
@@ -46,8 +61,12 @@ function addDerived(time, columns, Ns) {
             const f = lowpassFiltfilt(y, fs, 20);
             columns[`servoDot[${i}]`] = derivative(time, f, 1);
             columns[`servoDotDot[${i}]`] = derivative(time, f, 2);
+            const how = `servo_feedback[${i}], low-passed at 20 Hz without phase lag (forward-backward)`;
+            descriptions[`servoDot[${i}]`] = `Computed here: rate of ${how}, then differentiated [rad/s].`;
+            descriptions[`servoDotDot[${i}]`] = `Computed here: acceleration of ${how}, differentiated twice [rad/s²].`;
         });
     }
+    return descriptions;
 }
 
 const range = (a, b) => Array.from({ length: Math.max(0, b - a) }, (_, k) => a + k);
@@ -246,14 +265,14 @@ export function indiflightPlot(si, modeNames, headers = {}) {
     const { time, columns } = si;
     const craft = detectCraft(columns, headers);
     const crafts = craftChoices(columns, craft);
-    addDerived(time, columns, craft.Ns);
+    const descriptions = addDerived(time, columns, craft.Ns);
     const events = [...si.events];
     if (columns.flightModeFlags) {
         events.push(...bitChangeEvents(time, columns.flightModeFlags, modeNames));
     }
     return {
         craft,
-        data: { time, columns, events },
+        data: { time, columns, events, descriptions },
         panels: panels(columns, craft),
         viewport: { ...viewport(columns), ...crafts[0].viewport },
         crafts,
