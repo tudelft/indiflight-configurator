@@ -18,6 +18,8 @@ import { Capacitor } from "@capacitor/core";
 import { enableDevelopmentOptions } from "./utils/developmentOptions.js";
 import { pinia } from "./pinia_instance.js";
 import { useNavigationStore } from "../stores/navigation.js";
+import { useFlightPlotterStore } from "../stores/flightPlotter.js";
+import { startExternalLogHandoff } from "./indiflight/externalLogHandoff.js";
 import { MspCancelledError } from "./msp/mspErrors.js";
 
 window.addEventListener("unhandledrejection", (event) => {
@@ -86,9 +88,12 @@ function appReady() {
 
         initializeSerialBackend();
 
-        // Open OptionsDialog on first launch so new users can set language / theme
+        const handoff = startExternalLogHandoff({ open: openExternalLog });
+
+        // Open OptionsDialog on first launch so new users can set language / theme. Not over a log handed in by
+        // another site: it shows on the next normal visit instead.
         const firstRunCfg = getConfig("firstRun") ?? {};
-        if (firstRunCfg.firstRun === undefined) {
+        if (firstRunCfg.firstRun === undefined && !handoff) {
             setConfig({ firstRun: true });
             setTimeout(() => {
                 useNavigationStore(pinia).optionsDialogOpen = true;
@@ -99,6 +104,21 @@ function appReady() {
     const showNotifications = getConfig("showNotifications", false).showNotifications;
     if (showNotifications && NotificationManager.checkPermission() === "default") {
         NotificationManager.requestPermission();
+    }
+}
+
+async function openExternalLog(target, bytes, name) {
+    // switchTab refuses while another switch (e.g. the initial landing tab) is still mounting.
+    while (GUI.tab_switch_in_progress) {
+        await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+    if (target === "viewer") {
+        const { openLogInBlackboxViewer } = await import("../blackbox-viewer/vue_init.js");
+        openLogInBlackboxViewer(bytes, name);
+        switchTab("blackbox_viewer", { mode: "shared" });
+    } else {
+        useFlightPlotterStore(pinia).openLog(bytes, name);
+        switchTab("flight_plotter", { mode: "shared" });
     }
 }
 

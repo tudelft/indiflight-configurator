@@ -199,6 +199,25 @@ Add its `tab*` label in `locales/en/messages.json`. To switch tabs from code, ca
 - The layout isn't editable (`editable: false`). Host controls (file name, log selector) are teleported into
   `plotter.toolbarSlot`. The theme follows `.dark` on `<html>` through a MutationObserver.
 
+## Opening a log from another website
+`src/js/indiflight/externalLogHandoff.js`, started from `main.js`. An external page can offer an "Open in
+app.indiflight.org" button for a log it monitors, without a backend on either side. Its click handler must
+`window.open` the app synchronously (no `await` before it, or popup blockers step in) and without `noopener`:
+```js
+const app = window.open("https://app.indiflight.org/?openlog=plotter"); // or openlog=viewer
+const bytes = fetch(logUrl).then((r) => r.arrayBuffer());
+window.addEventListener("message", async (e) => {
+    if (e.source !== app || e.data?.type !== "indiflight-ready") return;
+    const data = await bytes;
+    app.postMessage({ type: "indiflight-log", name: "LOG00001.BFL", data }, "https://app.indiflight.org", [data]);
+});
+```
+The page fetches the log itself and the bytes go browser-to-browser, so the log host may be on a VPN the app server
+can't reach and needs no CORS headers. Don't add a `?log=<url>` variant: Chrome's Private Network Access blocks a
+public site from fetching private-network hosts. `Cross-Origin-Opener-Policy: same-origin` on either side cuts
+`window.opener`, and the handoff then silently does nothing. The app must not send it, and the external page may
+send at most `same-origin-allow-popups`.
+
 ## Release
 - The web version is the annotated tag `web-vX.Y.Z` (`git tag -a web-vX.Y.Z -m web-vX.Y.Z`).
   `vite.config.js` reads it for the footer.
