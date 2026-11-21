@@ -1,5 +1,5 @@
 import { reactive, ref, computed } from "vue";
-import djv from "djv";
+import { validateJsonSchema } from "../js/utils/jsonSchemaLite";
 import { i18n } from "../js/localization";
 import { mspHelper } from "../js/msp/MSPHelper";
 import FC from "../js/fc";
@@ -109,8 +109,6 @@ function buildPowerOptionsFromRange(range) {
 }
 
 export function useVtx() {
-    const env = new djv();
-
     // Reactive state
     const updating = ref(true);
     const savePending = ref(false);
@@ -408,9 +406,9 @@ export function useVtx() {
             throw new Error("Failed to fetch VTX schema");
         }
 
-        const valid = env.validate(schemaJson, vtxJsonConfig) === undefined;
-        console.log("Validation against schema result:", valid);
-        if (!valid) {
+        const errors = validateJsonSchema(schemaJson, vtxJsonConfig);
+        console.log("Validation against schema result:", errors.length === 0, errors);
+        if (errors.length) {
             throw new Error("VTX config validation failed");
         }
     }
