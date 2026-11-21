@@ -205,8 +205,11 @@ Add its `tab*` label in `locales/en/messages.json`. To switch tabs from code, ca
   harmonised.
 - To hand a log over from code, call `useFlightPlotterStore().openLog(bytes, name)`, then
   `switchTab("flight_plotter", { mode: "shared" })`. The Simulation tab does this.
-- The layout isn't editable (`editable: false`). Host controls (file name, log selector) are teleported into
-  `plotter.toolbarSlot`. The theme follows `.dark` on `<html>` through a MutationObserver.
+- The layout is editable: panels, tabs, the craft and its rotors, plus JSON export and import. The format is the
+  library's (`parseLayout()` in its `layout.js`). `indiflightPlot()` supplies the initial layout, which the toolbar's
+  reset button returns to. The user's layout is saved per craft type in `src/stores/flightPlotter.js`.
+- Host controls (file name, log selector) are teleported into `plotter.toolbarSlot`. The theme follows `.dark` on
+  `<html>` through a MutationObserver.
 
 ## Opening a log from another website
 `src/js/indiflight/externalLogHandoff.js`, started from `main.js`. An external page can offer an "Open in

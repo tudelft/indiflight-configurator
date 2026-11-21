@@ -220,6 +220,22 @@ function viewport(columns) {
 }
 
 /**
+ * A layout saved with another log of this craft type, for this log: its tabs and panels, but this log's 3D view
+ * (its signals, and its geometry and thrust scaling for the craft the user chose, if this log offers that craft).
+ * @param {object|null} saved  a layout file object
+ * @param {{viewport: object, crafts: {label: string, viewport: object}[]}} plot  from indiflightPlot()
+ */
+export function adaptSavedLayout(saved, plot) {
+    if (!saved) {
+        return null;
+    }
+    const name = saved.viewport?.craft?.name;
+    const choice = plot.crafts.find((c) => c.label === name) ?? plot.crafts[0];
+    const own = JSON.parse(JSON.stringify({ ...plot.viewport, ...choice.viewport }));
+    return { ...saved, viewport: { ...own, craft: { ...own.craft, name: choice.label } } };
+}
+
+/**
  * FlightPlotter options for an Indiflight log.
  * @param {{time: Float64Array, columns: Object<string, ArrayLike<number>>, events: object[]}} si  from flightLogToSI()
  * @param {string[]} modeNames  flight mode name per bit of flightModeFlags

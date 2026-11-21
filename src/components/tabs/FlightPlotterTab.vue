@@ -138,7 +138,7 @@ async function showLog(index) {
             throw new Error(flightLog.getLogError(index) || $t("flightPlotterNoData"));
         }
         // uPlot and three.js load with the first log, not with the app
-        const [{ FlightPlotter }, { indiflightPlot, extraHeaders }] = await Promise.all([
+        const [{ FlightPlotter }, { indiflightPlot, extraHeaders, adaptSavedLayout }] = await Promise.all([
             import("flightplotter"),
             import("@/js/indiflight/flightPlotterLayout"),
         ]);
@@ -156,7 +156,16 @@ async function showLog(index) {
             panels: plot.panels,
             viewport: plot.viewport,
             crafts: plot.crafts,
-            editable: false,
+            layoutName: `indiflight-${plot.craft.type}-layout`,
+            // the user's edits, kept per craft type; the toolbar's reset returns to the built-in layout
+            layout: adaptSavedLayout(store.savedLayout(plot.craft.type), plot),
+            onLayoutChange: (layout) => {
+                if (JSON.stringify(layout) === JSON.stringify(plotter?.initialLayout)) {
+                    store.forgetLayout(plot.craft.type);
+                } else {
+                    store.saveLayout(plot.craft.type, layout);
+                }
+            },
             theme: hostTheme(),
         });
         toolbarSlot.value = plotter.toolbarSlot;
