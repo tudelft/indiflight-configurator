@@ -1,5 +1,5 @@
 /// <reference types="vitest" />
-import { defineConfig, normalizePath } from "vite";
+import { defineConfig, normalizePath, searchForWorkspaceRoot } from "vite";
 import { cspPlugin } from "./csp.config.js";
 import vue from "@vitejs/plugin-vue";
 import path from "node:path";
@@ -16,6 +16,20 @@ const commitHash = child.execSync("git rev-parse --short HEAD").toString().trim(
 // Set by pushing a web-v* tag (see .github/workflows/deploy-web.yml); shown next to the hash.
 const releaseTag = child.execSync("git tag --points-at HEAD --list 'web-v*'").toString().trim().split("\n")[0];
 const revision = releaseTag ? `${releaseTag} ${commitHash}` : commitHash;
+
+// FLIGHTPLOTTER_DIR=../pyFlightPlotter npm run dev: use a local checkout of the plotting library instead of the
+// pinned package, to develop both together. Its bare imports (uplot, three) resolve from this repo via `dedupe`.
+const flightplotterDir =
+    process.env.FLIGHTPLOTTER_DIR &&
+    path.resolve(__dirname, process.env.FLIGHTPLOTTER_DIR, "pyFlightPlotter/web/static/flightplotter");
+const flightplotterAliases = [];
+if (flightplotterDir) {
+    flightplotterAliases.push(
+        { find: /^flightplotter$/, replacement: `${flightplotterDir}/index.js` },
+        { find: /^flightplotter\/style\.css$/, replacement: `${flightplotterDir}/style.css` },
+    );
+    console.log(`⚙ flightplotter from ${flightplotterDir}`);
+}
 
 const devHostname = process.env.BF_DEV_HOSTNAME || "local.betaflight.com";
 
@@ -225,10 +239,12 @@ export default defineConfig({
     // absolute paths; a relative root yields relative aliases and Vite warns about duplicated modules.
     root: path.resolve(__dirname, "src"),
     resolve: {
-        alias: {
-            "@": path.resolve(__dirname, "src"),
-            "/src": path.resolve(process.cwd(), "src"),
-        },
+        alias: [
+            { find: "@", replacement: path.resolve(__dirname, "src") },
+            { find: "/src", replacement: path.resolve(process.cwd(), "src") },
+            ...flightplotterAliases,
+        ],
+        dedupe: flightplotterDir ? ["uplot", "three"] : [],
     },
     server: {
         port: serverPort,
@@ -241,6 +257,7 @@ export default defineConfig({
         }),
         host: "0.0.0.0", // Listen on all network interfaces for Android device access
         allowedHosts: certsExist ? [devHostname] : ["localhost"],
+        ...(flightplotterDir && { fs: { allow: [searchForWorkspaceRoot(process.cwd()), flightplotterDir] } }),
     },
     preview: {
         port: serverPort,

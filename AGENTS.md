@@ -185,6 +185,8 @@ Add its `tab*` label in `locales/en/messages.json`. To switch tabs from code, ca
   tudelft/pyFlightPlotter, and the lockfile pins the commit. To pick up library changes, run
   `npm install flightplotter@github:tudelft/pyFlightPlotter#js-version`. The library is generic, so put plotting
   features there and keep Indiflight specifics here.
+- To develop both together, run `FLIGHTPLOTTER_DIR=../pyFlightPlotter npm run dev`. `vite.config.js` then aliases
+  `flightplotter` to that checkout instead of the pinned package.
 - `FlightPlotterTab.vue` loads `flightplotter` and the layout with a dynamic `import()`. A static import pulls uPlot into
   the tab registry and breaks jsdom test suites ("matchMedia is not a function").
 - The data path is `FlightLog` (the blackbox viewer's parser) → `flightLogToSI()` in `src/blackbox-viewer/flightlog_si.js`
