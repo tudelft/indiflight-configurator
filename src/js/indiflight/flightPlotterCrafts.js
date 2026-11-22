@@ -190,28 +190,58 @@ export function detectCraft(columns, headers = {}) {
 }
 
 /**
- * The crafts offered in the 3D view's selector, default first, each as the part of the viewport spec that
- * depends on the craft: geometry and the signals driving its rotors and surfaces.
- * @param {object} columns  SI columns, for the omega normalisation
- * @param {{type: string, Nr: number, Ns: number, act: object}} detected  from detectCraft()
- * @returns {{label: string, viewport: object}[]}
+ * The signals offered in the 3D view's rotor signal selector, default first: motor speeds (omegaUnfiltered, with
+ * omegaSp as setpoint), commands (u_state, with the motor outputs as setpoint), or INDI commands (u_state, with u as
+ * setpoint). Speeds are the default when the log has both of them, else the motor outputs. Rotor k is the k-th INDI motor actuator, and motor[k] the k-th motor output.
+ * @param {object} columns  SI columns
+ * @param {{act: object}} detected  from detectCraft()
+ * @returns {{label: string, viewport: {rotor: Array, rotorSet: Array}}[]}
  */
-export function craftChoices(columns, detected) {
-    const { Nr, Ns, act } = detected;
+export function signalChoices(columns, { act }) {
+    const motors = act.motorActs;
+    const all = (name) => motors.length > 0 && motors.every((a) => columns[`${name}[${a}]`]);
+    // the 3D view expects thrust in 0..1: speeds relative to the fastest motor, filtered so spikes don't count
     let omegaMax = 0;
-    for (const a of act.motorActs) {
-        for (const v of columns[`omega[${a}]`] ?? []) {
+    const src = all("omega") ? "omega" : "omegaUnfiltered";
+    for (const a of motors) {
+        for (const v of columns[`${src}[${a}]`] ?? []) {
             if (v > omegaMax) {
                 omegaMax = v;
             }
         }
     }
-    const motorSignals = {
-        // normalised for display: the 3D view expects thrust in 0..1
-        rotor: act.motorActs.map((a) => [`omega[${a}]`, 1 / (omegaMax + 1e-6)]),
-        rotorSet: act.motorActs.map((a) => `u[${a}]`),
+    const k = 1 / (omegaMax + 1e-6);
+    const speeds = {
+        label: "Speeds: omegaUnfiltered, omegaSp",
+        viewport: {
+            rotor: motors.map((a) => [`omegaUnfiltered[${a}]`, k]),
+            rotorSet: motors.map((a) => (columns[`omegaSp[${a}]`] ? [`omegaSp[${a}]`, k] : null)),
+        },
     };
-    const choice = (label, craft, extra = {}) => ({ label, viewport: { craft, ...motorSignals, ...extra } });
+    const commands = {
+        label: "Commands: u_state, motor",
+        viewport: { rotor: motors.map((a) => `u_state[${a}]`), rotorSet: motors.map((_, i) => `motor[${i}]`) },
+    };
+    const indi = {
+        label: "Commands: u_state, u",
+        viewport: { rotor: motors.map((a) => `u_state[${a}]`), rotorSet: motors.map((a) => `u[${a}]`) },
+    };
+    if (!all("omegaUnfiltered")) {
+        return [commands, indi];
+    }
+    return all("omegaSp") ? [speeds, commands, indi] : [commands, indi, speeds];
+}
+
+/**
+ * The crafts offered in the 3D view's selector, default first, each as the part of the viewport spec that
+ * depends on the craft: geometry and the signals driving its surfaces. Rotor signals come from signalChoices().
+ * @param {object} columns  SI columns
+ * @param {{type: string, Nr: number, Ns: number, act: object}} detected  from detectCraft()
+ * @returns {{label: string, viewport: object}[]}
+ */
+export function craftChoices(columns, detected) {
+    const { Nr, Ns, act } = detected;
+    const choice = (label, craft, extra = {}) => ({ label, viewport: { craft, ...extra } });
 
     if (detected.type === "tailsitter") {
         const craft = tailsitter();

@@ -1,10 +1,11 @@
 import { beforeAll, describe, expect, it } from "vitest";
 
 // flightplotter pulls in uPlot, which needs matchMedia; jsdom has none
-let detectCraft, craftChoices, extraHeaders;
+let detectCraft, craftChoices, signalChoices, extraHeaders;
 beforeAll(async () => {
     window.matchMedia ??= () => ({ matches: false, addEventListener() {}, removeEventListener() {}, addListener() {} });
-    ({ detectCraft, craftChoices, extraHeaders } = await import("../../src/js/indiflight/flightPlotterCrafts.js"));
+    ({ detectCraft, craftChoices, signalChoices, extraHeaders } =
+        await import("../../src/js/indiflight/flightPlotterCrafts.js"));
 });
 
 const columnsWith = (nMotor, nU = 8) => {
@@ -103,14 +104,12 @@ describe("flight plotter crafts", () => {
         ]);
     });
 
-    it("wires rotor k to the k-th INDI motor actuator", () => {
+    it("leaves the rotor signals to the signal choices", () => {
         const columns = columnsWith(4);
-        const choices = craftChoices(columns, detectCraft(columns, QUAD));
-        const v = choices[0].viewport;
-        expect(v.rotorSet).toEqual(["u[0]", "u[1]", "u[2]", "u[3]"]);
-        expect(v.rotor.map((r) => r[0])).toEqual(["omega[0]", "omega[1]", "omega[2]", "omega[3]"]);
-        // thrust is normalised to the largest motor speed of the motors
-        expect(v.rotor[0][1] * 400).toBeCloseTo(1, 3);
+        for (const c of craftChoices(columns, detectCraft(columns, QUAD))) {
+            expect(c.viewport.rotor).toBeUndefined();
+            expect(c.viewport.rotorSet).toBeUndefined();
+        }
     });
 
     it("detects the tailsitter: motors 0, 1, servos 2, 3", () => {
@@ -118,7 +117,7 @@ describe("flight plotter crafts", () => {
         const detected = detectCraft(columns, TAILSITTER);
         expect(detected).toMatchObject({ type: "tailsitter", Nr: 2, Ns: 2 });
         const [choice] = craftChoices(columns, detected);
-        expect(choice.viewport.rotorSet).toEqual(["u[0]", "u[1]"]);
+        expect(signalChoices(columns, detected)[0].viewport.rotor).toEqual(["u_state[0]", "u_state[1]"]);
         expect(choice.viewport.surfaceSet.map((r) => r[0])).toEqual(["u[2]", "u[3]"]);
     });
 
@@ -129,5 +128,58 @@ describe("flight plotter crafts", () => {
         const labels = craftChoices(columns, detected).map((c) => c.label);
         expect(labels[0]).toMatch(/Octo flat X.*props in/);
         expect(labels.some((l) => /X8/.test(l))).toBe(true);
+    });
+});
+
+describe("rotor signal choices", () => {
+    // a quad whose motor actuators are INDI actuators 1, 2, 4, 5 (servos at 0 and 3)
+    const HEADERS = { indi_act_num: "6", indi_act_is_motor: "0,1,1,0", indi_act_is_servo: "1,0,0,1" };
+    const MOTOR_ACTS = [1, 2, 4, 5];
+    const make = (names) => {
+        const c = {};
+        for (let i = 0; i < 4; i++) {
+            c[`motor[${i}]`] = new Float32Array(3);
+        }
+        for (let a = 0; a < 6; a++) {
+            c[`u[${a}]`] = new Float32Array(3);
+            c[`u_state[${a}]`] = new Float32Array(3);
+            for (const n of names) {
+                // the filtered speed peaks at 800 rad/s on actuator 4, the raw one spikes higher
+                const peak = n === "omega" && a === 4 ? 800 : n === "omegaUnfiltered" ? 2000 : 500;
+                c[`${n}[${a}]`] = Float32Array.from([0, peak, 100]);
+            }
+        }
+        return c;
+    };
+    const choose = (columns) => signalChoices(columns, detectCraft(columns, HEADERS));
+
+    it("defaults to motor speeds when the log has unfiltered speeds and speed setpoints", () => {
+        const [first, second] = choose(make(["omega", "omegaUnfiltered", "omegaSp"]));
+        expect(first.label).toMatch(/Speeds/);
+        expect(first.viewport.rotor.map((r) => r[0])).toEqual(MOTOR_ACTS.map((a) => `omegaUnfiltered[${a}]`));
+        expect(first.viewport.rotorSet.map((r) => r[0])).toEqual(MOTOR_ACTS.map((a) => `omegaSp[${a}]`));
+        // state and setpoint share one scale, from the filtered speeds
+        expect(first.viewport.rotor[0][1] * 800).toBeCloseTo(1, 3);
+        expect(first.viewport.rotorSet[0][1]).toBe(first.viewport.rotor[0][1]);
+        expect(second.label).toMatch(/Commands: u_state, motor/);
+    });
+
+    it("defaults to commands without speed setpoints, but still offers the speeds", () => {
+        const choices = choose(make(["omega", "omegaUnfiltered"]));
+        expect(choices.map((c) => c.label)).toEqual([
+            expect.stringMatching(/Commands: u_state, motor/),
+            expect.stringMatching(/Commands: u_state, u/),
+            expect.stringMatching(/Speeds/),
+        ]);
+        expect(choices[2].viewport.rotorSet).toEqual([null, null, null, null]);
+    });
+
+    it("offers only commands without speeds: the k-th motor output, or the INDI command, as setpoint", () => {
+        const choices = choose(make([]));
+        expect(choices).toHaveLength(2);
+        expect(choices[0].viewport.rotor).toEqual(MOTOR_ACTS.map((a) => `u_state[${a}]`));
+        expect(choices[0].viewport.rotorSet).toEqual(["motor[0]", "motor[1]", "motor[2]", "motor[3]"]);
+        expect(choices[1].viewport.rotor).toEqual(MOTOR_ACTS.map((a) => `u_state[${a}]`));
+        expect(choices[1].viewport.rotorSet).toEqual(MOTOR_ACTS.map((a) => `u[${a}]`));
     });
 });

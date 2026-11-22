@@ -203,6 +203,9 @@ Add its `tab*` label in `locales/en/messages.json`. To switch tabs from code, ca
   writes only 4 actuators per `indi_act_*` array), Betaflight presets with props in and out, and rings. With a
   partial header, the candidates that match the covered rotors go first. Users fix the rest in the 3D view's Rotors…
   dialog.
+- The rotor signals are a separate choice (`signalChoices()` in `flightPlotterCrafts.js`, the library's `signals`
+  option): motor speeds (`omegaUnfiltered`, setpoint `omegaSp`), or commands (`u_state`, setpoint `motor[k]` or `u`).
+  Speeds are the default only if the log has both, because mainline firmware logs no `omegaSp`.
 - Indiflight scale factors live in `src/blackbox-viewer/indiflight_fields.js`. The viewer's value display
   (`flightlog_fields_presenter.js`) and `flightlog_si.js` share that table, so change scalings there.
   `indiflight_log_tools` v0.7.0 is the reference. The duplication with it is intentional until the definitions are

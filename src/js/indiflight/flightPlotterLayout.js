@@ -4,7 +4,7 @@
  * IndiflightViewport, "Onboard ID" is IndiflightMotorSysIdPlotter (indiflightPlotter.py).
  */
 import { bitChangeEvents, derivative, lowpassFiltfilt, rotateByQuaternion, sampleRate } from "flightplotter";
-import { craftChoices, detectCraft, extraHeaders } from "./flightPlotterCrafts";
+import { craftChoices, detectCraft, extraHeaders, signalChoices } from "./flightPlotterCrafts";
 
 export { detectCraft, extraHeaders };
 
@@ -327,9 +327,11 @@ function viewport(columns) {
 
 /**
  * A layout saved with another log of this craft type, for this log: its tabs and panels, but this log's 3D view
- * (its signals, and its geometry and thrust scaling for the craft the user chose, if this log offers that craft).
+ * (its signals, its geometry for the craft the user chose and its rotor signals of the kind the user chose, if
+ * this log offers them).
  * @param {object|null} saved  a layout file object
- * @param {{viewport: object, crafts: {label: string, viewport: object}[]}} plot  from indiflightPlot()
+ * @param {{viewport: object, crafts: {label: string, viewport: object}[], signals: {label: string, viewport: object}[]}} plot
+ *        from indiflightPlot()
  */
 export function adaptSavedLayout(saved, plot) {
     if (!saved) {
@@ -337,8 +339,9 @@ export function adaptSavedLayout(saved, plot) {
     }
     const name = saved.viewport?.craft?.name;
     const choice = plot.crafts.find((c) => c.label === name) ?? plot.crafts[0];
-    const own = JSON.parse(JSON.stringify({ ...plot.viewport, ...choice.viewport }));
-    return { ...saved, viewport: { ...own, craft: { ...own.craft, name: choice.label } } };
+    const sig = plot.signals.find((c) => c.label === saved.viewport?.signals) ?? plot.signals[0];
+    const own = JSON.parse(JSON.stringify({ ...plot.viewport, ...choice.viewport, ...sig.viewport }));
+    return { ...saved, viewport: { ...own, craft: { ...own.craft, name: choice.label }, signals: sig.label } };
 }
 
 /**
@@ -352,6 +355,7 @@ export function indiflightPlot(si, modeNames, headers = {}) {
     const { time, columns } = si;
     const craft = detectCraft(columns, headers);
     const crafts = craftChoices(columns, craft);
+    const signals = signalChoices(columns, craft);
     const descriptions = addDerived(time, columns, craft.Ns);
     const events = [...si.events];
     if (columns.flightModeFlags) {
@@ -361,7 +365,8 @@ export function indiflightPlot(si, modeNames, headers = {}) {
         craft,
         data: { time, columns, events, descriptions },
         tabs: tabs(columns, craft),
-        viewport: { ...viewport(columns), ...crafts[0].viewport },
+        viewport: { ...viewport(columns), ...crafts[0].viewport, ...signals[0].viewport, signals: signals[0].label },
         crafts,
+        signals,
     };
 }

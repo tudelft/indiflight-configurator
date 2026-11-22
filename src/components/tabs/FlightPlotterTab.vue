@@ -163,6 +163,7 @@ async function showLog(index) {
             tabs: plot.tabs,
             viewport: plot.viewport,
             crafts: plot.crafts,
+            signals: plot.signals,
             popoutUrl: POPOUT_URL,
             layoutName: `indiflight-${plot.craft.type}-layout`,
             // the user's edits, kept per craft type; the toolbar's reset returns to the built-in layout
