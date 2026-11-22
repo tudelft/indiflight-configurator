@@ -160,7 +160,7 @@ async function showLog(index) {
         plotter?.destroy();
         plotter = new FlightPlotter(plotEl.value, {
             data: plot.data,
-            panels: plot.panels,
+            tabs: plot.tabs,
             viewport: plot.viewport,
             crafts: plot.crafts,
             popoutUrl: POPOUT_URL,

@@ -191,8 +191,12 @@ Add its `tab*` label in `locales/en/messages.json`. To switch tabs from code, ca
   the tab registry and breaks jsdom test suites ("matchMedia is not a function").
 - The data path is `FlightLog` (the blackbox viewer's parser) → `flightLogToSI()` in `src/blackbox-viewer/flightlog_si.js`
   (all fields in SI, angles in rad) → `indiflightPlot()` in `src/js/indiflight/flightPlotterLayout.js` (derived signals,
-  the fixed panels ported from `../indiflight/support/LogAnalysis/flightPlotter.py`) and `flightPlotterCrafts.js`
+  and the tabs of `../indiflight/support/LogAnalysis/analyseOnboardId.py`: "Flight Data" from `IndiflightPlotter`, and
+  "Onboard ID" from `IndiflightMotorSysIdPlotter`, only for logs with learner fields) and `flightPlotterCrafts.js`
   (the craft choices for the 3D view).
+- The learner logs by INDI actuator, servos included. `fx_[pqr]_rls_x` holds N ω² terms and then N ω̇ terms, where N is
+  the logged slot count (4, or 8 with `BLACKBOX_LEARNER_LOG_8_MOTORS`), not the motor count. The RLS values stay
+  unscaled, as in `indiflight_log_tools`.
 - Logged motor k is the k-th INDI actuator flagged as a motor. It is in INDI or Betaflight mixer order, never output pin
   order: `motor_output_reordering` only remaps pins, and it isn't in the log. Neither are the mixer type and
   `yaw_motors_reversed`. So the craft choices are: geometry from the INDI G1 matrix in the header (but the firmware
@@ -205,7 +209,8 @@ Add its `tab*` label in `locales/en/messages.json`. To switch tabs from code, ca
   harmonised.
 - To hand a log over from code, call `useFlightPlotterStore().openLog(bytes, name)`, then
   `switchTab("flight_plotter", { mode: "shared" })`. The Simulation tab does this.
-- The layout is editable: panels, tabs, the craft and its rotors, plus JSON export and import. The format is the
+- The layout is editable: panels, tabs, the craft and its rotors, plus JSON export and import of the whole layout or
+  of single tabs (`.tab.json`). The format is the
   library's (`parseLayout()` in its `layout.js`). `indiflightPlot()` supplies the initial layout, which the toolbar's
   reset button returns to. The user's layout is saved per craft type in `src/stores/flightPlotter.js`.
 - Tabs pop out into windows that load `src/components/tabs/flight-plotter-popout/flight_plotter_popout.html`, a second
