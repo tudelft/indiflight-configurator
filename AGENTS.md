@@ -210,7 +210,9 @@ Add its `tab*` label in `locales/en/messages.json`. To switch tabs from code, ca
   reset button returns to. The user's layout is saved per craft type in `src/stores/flightPlotter.js`.
 - Tabs pop out into windows that load `src/components/tabs/flight-plotter-popout/flight_plotter_popout.html`, a second
   Vite entry. It joins the main window's plotter session, so it needs no data of its own. Pop-outs are off in Tauri
-  and Capacitor builds, because those shells don't open such windows.
+  and Capacitor builds, because those shells don't open such windows. The service worker has to ignore the
+  `fp-popout` URL parameter (`ignoreURLParametersMatching` in `vite.config.js`), or its navigation fallback serves
+  `index.html` to the pop-out. The dev server has no service worker, so test pop-outs on a production build too.
 - Host controls (file name, log selector) are teleported into `plotter.toolbarSlot`. The theme follows `.dark` on
   `<html>` through a MutationObserver.
 

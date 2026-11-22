@@ -215,6 +215,9 @@ export default defineConfig({
                 globPatterns: ["**/*.{js,css,html,ico,png,svg,json,mcm,gltf}"],
                 // 5MB
                 maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
+                // Flight Plotter pop-outs open flight_plotter_popout.html?fp-popout=<id>; without ignoring that
+                // parameter the URL misses the precache and the navigation fallback serves index.html instead
+                ignoreURLParametersMatching: [/^utm_/, /^fbclid$/, /^fp-popout$/],
             },
             includeAssets: ["favicon.ico", "apple-touch-icon.png"],
             manifest: {
