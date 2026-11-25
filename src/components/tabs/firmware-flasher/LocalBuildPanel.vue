@@ -115,7 +115,7 @@
                 />
                 <pre
                     ref="logEl"
-                    class="max-h-72 overflow-auto rounded-md bg-muted p-2 text-xs font-mono whitespace-pre-wrap"
+                    class="max-h-72 overflow-auto rounded-md bg-muted p-2 text-xs font-mono whitespace-pre-wrap select-text! **:select-text!"
                 ><span
                     v-for="(entry, i) in store.log"
                     :key="i"
