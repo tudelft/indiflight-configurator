@@ -125,7 +125,8 @@
                     :columns="columns"
                     :loading="listing"
                     :empty="listed ? $t('blackboxLogsNoFiles') : $t('blackboxLogsNotListed')"
-                    :ui="{ th: 'text-xs', td: 'py-1 text-sm' }"
+                    sticky
+                    :ui="{ root: 'max-h-96 overflow-y-auto', th: 'text-xs', td: 'py-1 text-sm' }"
                 >
                     <template #select-cell="{ row }">
                         <UCheckbox
