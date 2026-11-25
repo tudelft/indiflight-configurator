@@ -42,7 +42,6 @@ class GuiControl {
             "configuration",
             "logging",
             "onboard_logging",
-            "blackbox_logs",
             "modes",
             "motors",
             "pid_tuning",

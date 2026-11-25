@@ -259,6 +259,16 @@
                                 </ul>
                             </div>
                         </UiBox>
+
+                        <UiBox
+                            :title="$t('tabBlackboxLogs')"
+                            collapsible
+                            :default-open="false"
+                            v-if="dataflashSupported || sdcardSupported"
+                            @toggle="logsOpened = logsOpened || $event"
+                        >
+                            <BlackboxLogsPanel v-if="logsOpened" />
+                        </UiBox>
                     </div>
 
                     <UiBox :title="$t('onboardLoggingMsc')" class="require-msc-supported">
@@ -297,6 +307,7 @@ import WikiButton from "../elements/WikiButton.vue";
 import UiBox from "../elements/UiBox.vue";
 import SettingRow from "../elements/SettingRow.vue";
 import HelpIcon from "../elements/HelpIcon.vue";
+import BlackboxLogsPanel from "../onboard-logging/BlackboxLogsPanel.vue";
 import GUI from "../../js/gui";
 import MSP from "../../js/msp";
 import MSPCodes from "../../js/msp/MSPCodes";
@@ -369,6 +380,7 @@ export default defineComponent({
         UiBox,
         SettingRow,
         HelpIcon,
+        BlackboxLogsPanel,
     },
     setup() {
         const fcStore = useFlightControllerStore();
@@ -955,8 +967,11 @@ export default defineComponent({
             }
         });
 
+        const logsOpened = ref(false);
+
         return {
             MSP,
+            logsOpened,
             eraseOpen,
             saveOpen,
             saveDone,

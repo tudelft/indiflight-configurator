@@ -76,7 +76,7 @@
 <script setup>
 import { computed, inject, onMounted, onUnmounted, ref, watch } from "vue";
 import { useTranslation } from "i18next-vue";
-import { sidebarItems, isItemVisible, hasLogStorage } from "./sidebar_items.js";
+import { sidebarItems, isItemVisible } from "./sidebar_items.js";
 import { useConnectionStore } from "@/stores/connection";
 import { useNavigationStore } from "@/stores/navigation";
 import { vueTabState } from "@/js/vue_tab_mounter.js";
@@ -128,7 +128,6 @@ const ctx = computed(() => {
         expertMode: Boolean(model?.expertMode),
         buildOptions: fc?.CONFIG?.buildOptions,
         features: fc?.FEATURE_CONFIG?.features,
-        logStorageSupported: hasLogStorage(fc),
     };
 });
 

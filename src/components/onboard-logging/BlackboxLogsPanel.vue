@@ -1,10 +1,7 @@
 <template>
-    <BaseTab tab-name="blackbox_logs">
-        <div class="content_wrapper">
-            <div class="tab_title">{{ $t("tabBlackboxLogs") }}</div>
-            <UiBox highlight class="mb-3">
-                <p>{{ $t("blackboxLogsNote") }}</p>
-            </UiBox>
+    <div>
+        <div>
+            <p class="mb-3 text-sm">{{ $t("blackboxLogsNote") }}</p>
 
             <div class="flex flex-col gap-2">
                 <UAlert
@@ -210,7 +207,7 @@
             </template>
         </UModal>
 
-        <div class="content_toolbar toolbar_fixed_bottom flex items-center gap-2">
+        <div class="mt-4 flex flex-wrap items-center gap-2">
             <UButton
                 variant="soft"
                 icon="i-lucide-refresh-cw"
@@ -236,15 +233,13 @@
                 @click="downloadSelected"
             />
         </div>
-    </BaseTab>
+    </div>
 </template>
 
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import { useTranslation } from "i18next-vue";
-import BaseTab from "./BaseTab.vue";
 import UiBox from "@/components/elements/UiBox.vue";
-import GUI from "@/js/gui";
 import { bytesToSize } from "@/js/utils/common";
 import { useBlackboxLogs } from "@/composables/useBlackboxLogs";
 import { switchTab } from "@/js/tab_switch";
@@ -372,13 +367,7 @@ function formatTimestamp(ts) {
     return `${ts.year}-${pad(ts.month)}-${pad(ts.day)} ${pad(ts.hours)}:${pad(ts.minutes)}:${pad(ts.seconds)}`;
 }
 
-onMounted(async () => {
-    try {
-        await load();
-    } finally {
-        GUI.content_ready();
-    }
-});
+onMounted(load);
 
 onUnmounted(() => {
     dispose();

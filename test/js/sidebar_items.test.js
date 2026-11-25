@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { sidebarItems, isItemVisible, hasLogStorage } from "../../src/components/sidebar/sidebar_items.js";
+import { sidebarItems, isItemVisible } from "../../src/components/sidebar/sidebar_items.js";
 
 describe("sidebarItems ordering", () => {
     it("places firmware_flasher at index 1 (immediately after landing)", () => {
@@ -107,21 +107,5 @@ describe("isItemVisible", () => {
             hideInSidebar: true,
         };
         expect(isItemVisible(item, { expertMode: false })).toBe(true);
-    });
-
-    it("shows the log download tab only when the FC has log storage (SD card or flash)", () => {
-        const item = sidebarItems.find((i) => i.key === "blackbox_logs");
-        expect(item).toMatchObject({ mode: "connected", requiresLogStorage: true });
-        expect(isItemVisible(item, { expertMode: false, logStorageSupported: false })).toBe(false);
-        expect(isItemVisible(item, { expertMode: false })).toBe(false);
-        expect(isItemVisible(item, { expertMode: false, logStorageSupported: true })).toBe(true);
-    });
-
-    it("counts an SD card slot or onboard flash as log storage", () => {
-        expect(hasLogStorage({ SDCARD: { supported: false }, DATAFLASH: { supported: true } })).toBe(true);
-        expect(hasLogStorage({ SDCARD: { supported: true }, DATAFLASH: { supported: false } })).toBe(true);
-        expect(hasLogStorage({ SDCARD: { supported: false }, DATAFLASH: { supported: false } })).toBe(false);
-        expect(hasLogStorage({ SDCARD: null, DATAFLASH: { supported: true } })).toBe(true);
-        expect(hasLogStorage(undefined)).toBe(false);
     });
 });

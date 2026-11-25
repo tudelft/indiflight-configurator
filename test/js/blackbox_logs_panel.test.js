@@ -4,7 +4,7 @@ import i18next from "i18next";
 import I18NextVue from "i18next-vue";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { TooltipProvider } from "reka-ui";
-import BlackboxLogsTab from "../../src/components/tabs/BlackboxLogsTab.vue";
+import BlackboxLogsPanel from "../../src/components/onboard-logging/BlackboxLogsPanel.vue";
 import CONFIGURATOR from "../../src/js/data_storage";
 import FileSystem from "../../src/js/FileSystem";
 import { switchTab } from "../../src/js/tab_switch";
@@ -21,7 +21,7 @@ async function flush() {
     }
 }
 
-describe("BlackboxLogsTab (virtual mode)", () => {
+describe("BlackboxLogsPanel (virtual mode)", () => {
     let container;
     let app;
 
@@ -33,7 +33,7 @@ describe("BlackboxLogsTab (virtual mode)", () => {
         const pinia = createPinia();
         setActivePinia(pinia);
         // UTooltip needs the provider UApp gives it in the app
-        app = createApp({ render: () => h(TooltipProvider, null, () => h(BlackboxLogsTab)) });
+        app = createApp({ render: () => h(TooltipProvider, null, () => h(BlackboxLogsPanel)) });
         app.use(pinia).use(I18NextVue, { i18next });
         app.mount(container);
         // the virtual FC simulates a flash scan before the first listing succeeds
@@ -47,6 +47,12 @@ describe("BlackboxLogsTab (virtual mode)", () => {
         CONFIGURATOR.virtualMode = false;
         vi.restoreAllMocks();
         vi.clearAllMocks();
+    });
+
+    it("lists the newest log first", () => {
+        const names = [...container.querySelectorAll("tbody tr td:nth-child(2)")].map((td) => td.textContent.trim());
+        expect(names).toEqual([...names].sort().reverse());
+        expect(names[0]).toBe("LOG00003.BFL");
     });
 
     it("lists the virtual flash logs on mount and names the storage", () => {
@@ -113,8 +119,8 @@ describe("BlackboxLogsTab (virtual mode)", () => {
 
         expect(pickSaveFile).not.toHaveBeenCalled();
         expect(create).toHaveBeenCalledTimes(1);
-        expect(create).toHaveBeenCalledWith(directory, "LOG00001.BFL");
-        expect(abortFile).toHaveBeenCalledWith("writable", { name: "LOG00001.BFL" });
+        expect(create).toHaveBeenCalledWith(directory, "LOG00003.BFL");
+        expect(abortFile).toHaveBeenCalledWith("writable", { name: "LOG00003.BFL" });
         expect(closeFile).not.toHaveBeenCalled();
         expect(container.textContent).toContain("blackboxLogsCancelled");
         expect(container.textContent).toContain("blackboxLogsStateCancelled");

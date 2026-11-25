@@ -534,7 +534,7 @@ export function useBlackboxLogs() {
                 },
             });
             storage.value = onFlash ? "flash" : "sdcard";
-            entries.sort((a, b) => a.name.localeCompare(b.name));
+            entries.sort((a, b) => b.name.localeCompare(a.name)); // newest first: log numbers increase
             files.value = entries;
             selectedNames.value = selectedNames.value.filter((n) => entries.some((e) => e.name === n));
             results.value = {};
