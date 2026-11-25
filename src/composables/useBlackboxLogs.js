@@ -9,6 +9,7 @@ import FC from "../js/fc";
 import FileSystem from "../js/FileSystem";
 import { i18n } from "../js/localization";
 import { useConnectionStore } from "../stores/connection";
+import { useLogbookStore } from "../stores/logbook";
 
 // Same request size as the dataflash download; the FC truncates to what fits in its MSP buffer.
 export const BLACKBOX_LOG_BLOCK_SIZE = 4096;
@@ -392,6 +393,7 @@ let eraseRun = null;
  */
 export function useBlackboxLogs() {
     const connectionStore = useConnectionStore();
+    const logbook = useLogbookStore();
 
     const files = ref([]);
     const selectedNames = ref([]);
@@ -403,6 +405,8 @@ export function useBlackboxLogs() {
     const storage = ref(null);
     const message = ref(null);
     const results = ref({});
+    // Upload to the log database per file name: {state: "uploading"|"uploaded"|"skipped"|"failed", error?}
+    const uploads = ref({});
     const progress = shallowRef(null);
     let cancelRequested = false;
     let disposed = false;
@@ -607,6 +611,7 @@ export function useBlackboxLogs() {
     function startTransfer(entries) {
         cancelRequested = false;
         message.value = null;
+        uploads.value = {};
         results.value = Object.fromEntries(entries.map((e) => [e.name, { state: "queued", received: 0 }]));
         connectionStore.pauseLiveData();
     }
@@ -648,18 +653,45 @@ export function useBlackboxLogs() {
         await close();
     }
 
+    // Uploads run one at a time in the background while the next log downloads.
+    let uploadQueue = Promise.resolve();
+
+    function setUpload(name, state, error) {
+        uploads.value = { ...uploads.value, [name]: { state, error } };
+    }
+
+    async function uploadLog(name, bytes) {
+        setUpload(name, "uploading");
+        try {
+            const { status } = await logbook.client().upload(logbook.storedName(name), bytes);
+            setUpload(name, status === "skipped" ? "skipped" : "uploaded");
+        } catch (error) {
+            console.error("Upload to the log database failed", error);
+            setUpload(name, "failed", error.message);
+        }
+    }
+
+    function queueUpload(name, bytes) {
+        setUpload(name, "queued");
+        uploadQueue = uploadQueue.then(() => uploadLog(name, bytes));
+        return uploadQueue;
+    }
+
     async function downloadOne(entry, target, session) {
         const file = target ?? (await FileSystem.createFileInDirectory(session.directory, entry.name));
         const writable = await FileSystem.openFile(file);
         setResult(entry.name, "downloading");
 
         let received = 0;
+        const keep = logbook.autoUpload && logbook.configured ? [] : null;
         try {
             received = await readBlackboxLogFile({
                 read: api().read,
                 name: entry.name,
                 isCancelled: () => cancelRequested,
                 onChunk: async (data) => {
+                    // Copy: the reply's buffer is not ours to keep.
+                    keep?.push(new Uint8Array(data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength)));
                     await FileSystem.writeChunck(writable, new Blob([data]));
                     received += data.byteLength;
                     trackChunk(session, received, data.byteLength);
@@ -681,6 +713,10 @@ export function useBlackboxLogs() {
         // A size mismatch keeps the file (it may still be useful) but is reported.
         const ok = received === entry.size;
         setResult(entry.name, ok ? "done" : "mismatch", received);
+        // An incomplete log is not worth sending to the shared database.
+        if (keep && ok) {
+            queueUpload(entry.name, new Blob(keep));
+        }
         return ok;
     }
 
@@ -894,6 +930,7 @@ export function useBlackboxLogs() {
         storageUsage,
         message,
         results,
+        uploads,
         progress,
         storageSupported,
         storageIssueKey,

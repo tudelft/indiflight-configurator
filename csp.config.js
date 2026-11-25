@@ -41,6 +41,8 @@ export const cspDirectives = {
         "https://api.iconify.design",
         "https://api.simplesvg.com",
         "https://api.unisvg.com",
+        // Log database (Log Download tab): a server the user enters.
+        "https:",
         // Local build / simulation daemon. Plain http only works for loopback from an https page anyway.
         ...LOCALHOST,
         // FC over WebSocket: SITL on loopback, or a TLS bridge on any host the user enters.

@@ -4490,6 +4490,51 @@
     "blackboxLogsStateDownloading": {
         "message": "Downloading"
     },
+    "blackboxLogsUploadTitle": {
+        "message": "Upload to log database"
+    },
+    "blackboxLogsUploadNote": {
+        "message": "Send downloaded logs to a server running the MAVLab log database web UI. Create an API key with the logs:upload scope on your account page there and paste it here. Logs the server already has are skipped."
+    },
+    "blackboxLogsUploadUrl": {
+        "message": "Server URL"
+    },
+    "blackboxLogsUploadToken": {
+        "message": "API key"
+    },
+    "blackboxLogsUploadFolder": {
+        "message": "Aircraft folder (optional)"
+    },
+    "blackboxLogsUploadFolderHelp": {
+        "message": "Stored as the folder of the log's name. A folder named after one fleet aircraft links the log to it."
+    },
+    "blackboxLogsUploadAuto": {
+        "message": "Upload logs automatically after downloading them"
+    },
+    "blackboxLogsUploadTest": {
+        "message": "Test connection"
+    },
+    "blackboxLogsUploadTestOk": {
+        "message": "Connected to the log database."
+    },
+    "blackboxLogsUploadTestFailed": {
+        "message": "Connection failed: {{error}}"
+    },
+    "blackboxLogsUploadStateQueued": {
+        "message": "Upload queued"
+    },
+    "blackboxLogsUploadStateUploading": {
+        "message": "Uploading\u2026"
+    },
+    "blackboxLogsUploadStateUploaded": {
+        "message": "Uploaded"
+    },
+    "blackboxLogsUploadStateSkipped": {
+        "message": "Already on server"
+    },
+    "blackboxLogsUploadStateFailed": {
+        "message": "Upload failed"
+    },
     "blackboxLogsStateDone": {
         "message": "Done"
     },

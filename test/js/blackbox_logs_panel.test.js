@@ -10,6 +10,8 @@ import FileSystem from "../../src/js/FileSystem";
 import { switchTab } from "../../src/js/tab_switch";
 import { openLogInBlackboxViewer } from "../../src/blackbox-viewer/vue_init";
 import { useFlightPlotterStore } from "../../src/stores/flightPlotter";
+import { useLogbookStore } from "../../src/stores/logbook";
+import { LogbookClient } from "../../src/js/indiflight/logbookClient";
 
 vi.mock("../../src/js/tab_switch", () => ({ switchTab: vi.fn() }));
 vi.mock("../../src/blackbox-viewer/vue_init", () => ({ openLogInBlackboxViewer: vi.fn() }));
@@ -88,6 +90,48 @@ describe("BlackboxLogsPanel (virtual mode)", () => {
         expect(FileSystem.pickSaveFile).toHaveBeenCalledWith("LOG00003.BFL", expect.any(String), ".BFL");
         expect(chunks.reduce((a, b) => a + b, 0)).toBe(42_123);
         expect(container.textContent).toContain("blackboxLogsDownloadDone");
+    });
+
+    it("uploads a completely downloaded log to the log database when auto-upload is on", async () => {
+        const logbook = useLogbookStore();
+        Object.assign(logbook, {
+            url: "https://logs.example.org",
+            token: "logdb_x",
+            autoUpload: true,
+            folder: "Hex 1/",
+        });
+        const upload = vi
+            .spyOn(LogbookClient.prototype, "upload")
+            .mockResolvedValue({ status: "accepted", ingestId: 3 });
+        vi.spyOn(FileSystem, "pickSaveFile").mockResolvedValue({ name: "LOG00003.BFL" });
+        vi.spyOn(FileSystem, "openFile").mockResolvedValue("writable");
+        vi.spyOn(FileSystem, "writeChunck").mockResolvedValue();
+        vi.spyOn(FileSystem, "closeFile").mockResolvedValue();
+
+        const row = [...container.querySelectorAll("tbody tr")].find((r) => r.textContent.includes("LOG00003.BFL"));
+        row.querySelector("button[role='checkbox']").click();
+        await flush();
+        [...container.querySelectorAll("button")].find((b) => b.textContent.includes("blackboxLogsDownload")).click();
+
+        await vi.waitFor(() => expect(upload).toHaveBeenCalledTimes(1), { timeout: 3000 });
+        expect(upload.mock.calls[0][0]).toBe("Hex 1/LOG00003.BFL");
+        expect(upload.mock.calls[0][1].size).toBe(42_123);
+        await vi.waitFor(() => expect(container.textContent).toContain("blackboxLogsUploadStateUploaded"));
+    });
+
+    it("does not upload when auto-upload is off", async () => {
+        const upload = vi.spyOn(LogbookClient.prototype, "upload");
+        vi.spyOn(FileSystem, "pickSaveFile").mockResolvedValue({ name: "LOG00003.BFL" });
+        vi.spyOn(FileSystem, "openFile").mockResolvedValue("writable");
+        vi.spyOn(FileSystem, "writeChunck").mockResolvedValue();
+        const closeFile = vi.spyOn(FileSystem, "closeFile").mockResolvedValue();
+        const row = [...container.querySelectorAll("tbody tr")].find((r) => r.textContent.includes("LOG00003.BFL"));
+        row.querySelector("button[role='checkbox']").click();
+        await flush();
+        [...container.querySelectorAll("button")].find((b) => b.textContent.includes("blackboxLogsDownload")).click();
+        await vi.waitFor(() => expect(closeFile).toHaveBeenCalled(), { timeout: 3000 });
+        await flush();
+        expect(upload).not.toHaveBeenCalled();
     });
 
     it("saves several files into one picked directory and discards the partial file on cancel", async () => {
