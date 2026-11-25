@@ -13,6 +13,8 @@ export const sidebarItems = [
     { key: "power", mode: "connected", i18n: "tabPower", icon: "i-lucide-battery" },
     { key: "failsafe", mode: "connected", i18n: "tabFailsafe", icon: "i-lucide-shield-alert", expert: true },
     { key: "pid_tuning", mode: "connected", i18n: "tabPidTuning", icon: "i-lucide-gauge" },
+    // allowed only when the FC answers the INDI MSP (useIndiConfigStore().probe() during connect)
+    { key: "indi_config", mode: "connected", i18n: "tabIndiConfig", icon: "i-lucide-sliders-vertical" },
     { key: "receiver", mode: "connected", i18n: "tabReceiver", icon: "i-lucide-radio" },
     { key: "auxiliary", mode: "connected", i18n: "tabAuxiliary", icon: "i-lucide-toggle-right" },
     { key: "adjustments", mode: "connected", i18n: "tabAdjustments", icon: "i-lucide-sliders", expert: true },

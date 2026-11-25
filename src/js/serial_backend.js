@@ -27,6 +27,7 @@ import { unmountVueTab } from "./vue_tab_mounter";
 import { switchTab } from "./tab_switch";
 import { useConnectionStore } from "../stores/connection";
 import { useDialogStore } from "../stores/dialog";
+import { useIndiConfigStore } from "../stores/indiConfig";
 import { isMspCancelled } from "./msp/mspErrors.js";
 
 const logHead = "[SERIAL-BACKEND]";
@@ -1097,6 +1098,9 @@ async function processCraftName() {
         }
     }
 
+    // Before finishOpen() builds the allowed tabs: the INDI tab is there only if the FC answers its MSP
+    await useIndiConfigStore().probe();
+
     FC.CONFIG.armingDisabled = false;
     mspHelper.setArmingEnabled(false, false, setRtc);
 }
@@ -1128,6 +1132,10 @@ function finishOpen() {
         }
     } else {
         GUI.allowedTabs = Array.from(GUI.defaultAllowedFCTabsWhenConnected);
+    }
+
+    if (useIndiConfigStore().supported) {
+        GUI.allowedTabs.push("indi_config");
     }
 
     onConnect();

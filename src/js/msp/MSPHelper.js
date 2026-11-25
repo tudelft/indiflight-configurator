@@ -1536,6 +1536,12 @@ MspHelper.prototype.process_data = function (dataHandler) {
                 case MSPCodes.MSP2_INDI_BLACKBOX_LOG_ERASE_ALL:
                     // No-op, decoded by the blackboxLog* helpers
                     break;
+                case MSPCodes.MSP2_CLI_SETTING:
+                case MSPCodes.MSP2_CLI_SETTING_INFO:
+                case MSPCodes.MSP2_INDI_PROFILE_INDEX:
+                case MSPCodes.MSP2_SET_INDI_PROFILE_INDEX:
+                    // No-op, decoded by src/js/msp/cliSetting.ts (INDI tab store)
+                    break;
                 case MSPCodes.MSP_DATAFLASH_ERASE:
                     console.log("Data flash erase begun...");
                     break;

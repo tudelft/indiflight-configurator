@@ -518,6 +518,471 @@
     "tabPidTuning": {
         "message": "PID Tuning"
     },
+    "tabIndiConfig": {
+        "message": "INDI"
+    },
+    "indiConfigProfile": {
+        "message": "INDI profile"
+    },
+    "indiConfigProfileHelp": {
+        "message": "The INDI controller has its own profiles, separate from the PID profiles. Switching applies to the flight controller at once and is kept after Save."
+    },
+    "indiConfigProfileOption": {
+        "message": "Profile {{n}}"
+    },
+    "indiConfigCopyProfile": {
+        "message": "Copy profile"
+    },
+    "indiConfigCopyProfileNote": {
+        "message": "Copies the current INDI profile, as saved on the flight controller (without unsaved edits), to the selected profile. Save afterwards to keep the copy."
+    },
+    "indiConfigResetProfile": {
+        "message": "Reset to defaults"
+    },
+    "indiConfigSubTabController": {
+        "message": "Controller"
+    },
+    "indiConfigSubTabActuators": {
+        "message": "Actuators"
+    },
+    "indiConfigSubTabAdvanced": {
+        "message": "Advanced"
+    },
+    "indiConfigRefresh": {
+        "message": "Refresh"
+    },
+    "indiConfigSave": {
+        "message": "Save"
+    },
+    "indiConfigLoadFailed": {
+        "message": "Reading the INDI settings failed"
+    },
+    "indiConfigProfileSwitchFailed": {
+        "message": "Switching the INDI profile failed: {{error}}"
+    },
+    "indiConfigProfileCopied": {
+        "message": "INDI profile {{from}} copied to profile {{to}}. Save to keep it."
+    },
+    "indiConfigProfileCopyFailed": {
+        "message": "Copying the INDI profile failed: {{error}}"
+    },
+    "indiConfigSaved": {
+        "message": "INDI settings saved"
+    },
+    "indiConfigSaveFailed": {
+        "message": "Saving the INDI settings failed: {{error}}"
+    },
+    "indiConfigRefreshed": {
+        "message": "INDI settings refreshed"
+    },
+    "indiConfigActuators": {
+        "message": "Actuators"
+    },
+    "indiConfigActuatorsHelp": {
+        "message": "INDI actuators in INDI order: actuator k is motor or servo output k. Motors are in mixer order, not output pin order (motor_output_reordering only remaps pins)."
+    },
+    "indiConfigActuatorN": {
+        "message": "Act. {{n}}"
+    },
+    "indiConfigAxisRoll": {
+        "message": "Roll"
+    },
+    "indiConfigAxisPitch": {
+        "message": "Pitch"
+    },
+    "indiConfigAxisYaw": {
+        "message": "Yaw"
+    },
+    "indiConfigActTypeOff": {
+        "message": "Off"
+    },
+    "indiConfigActTypeMotor": {
+        "message": "Motor"
+    },
+    "indiConfigActTypeServo": {
+        "message": "Servo"
+    },
+    "indiConfigGroup_gains": {
+        "message": "Gains"
+    },
+    "indiConfigGroup_gainsHelp": {
+        "message": "Attitude and rate loop gains. The attitude gain is that of an equivalent parallel PD controller; the firmware runs it as a cascade with the rate loop."
+    },
+    "indiConfigGroup_rateLimits": {
+        "message": "Rate limits"
+    },
+    "indiConfigGroup_manual": {
+        "message": "Manual flight"
+    },
+    "indiConfigGroup_indi": {
+        "message": "INDI"
+    },
+    "indiConfigGroup_wls": {
+        "message": "Allocation weights"
+    },
+    "indiConfigGroup_wlsHelp": {
+        "message": "Weights of the pseudo-controls (fx, fy, fz, roll, pitch, yaw) in the weighted least-squares allocation. When the actuators saturate, axes with higher weight are kept closer to their setpoint."
+    },
+    "indiConfigGroup_rpmCtl": {
+        "message": "RPM control"
+    },
+    "indiConfigGroup_rpmCtlHelp": {
+        "message": "Closed-loop motor speed control around the ESC command."
+    },
+    "indiConfigGroup_motorLeadLag": {
+        "message": "Motor lead-lag"
+    },
+    "indiConfigGroup_motorLeadLagHelp": {
+        "message": "Lead-lag compensation from the true to the desired actuator time constant."
+    },
+    "indiConfigGroup_feedforward": {
+        "message": "Feedforward"
+    },
+    "indiConfigGroup_attLeadLag": {
+        "message": "Attitude lead-lag"
+    },
+    "indiConfigGroup_gainScheduling": {
+        "message": "Gain scheduling"
+    },
+    "indiConfigGroup_spInjection": {
+        "message": "Attitude setpoint injection"
+    },
+    "indiConfigGroup_inputDist": {
+        "message": "Input disturbance injection"
+    },
+    "indiConfigGroup_tailsitter": {
+        "message": "Tailsitter"
+    },
+    "indiConfigGroup_tailsitterHelp": {
+        "message": "Scheduled tailsitter model: actuators 1 and 2 are motors, 3 and 4 servos."
+    },
+    "indiConfigActGroup_actuator": {
+        "message": "Actuator"
+    },
+    "indiConfigActGroup_g1": {
+        "message": "Effectiveness G1"
+    },
+    "indiConfigActGroup_g1Help": {
+        "message": "Change of specific force and rotational acceleration per unit command of each actuator."
+    },
+    "indiConfigActGroup_g2": {
+        "message": "Rotor inertia G2"
+    },
+    "indiConfigActGroup_g2Help": {
+        "message": "Yaw (and roll, pitch) acceleration of the body per rad/s² of rotor acceleration, from the rotor inertia."
+    },
+    "indiConfigActGroup_allocation": {
+        "message": "Allocation"
+    },
+    "indiConfigField_indi_attitude_gains": {
+        "message": "Attitude gain"
+    },
+    "indiConfigField_indi_rate_gains": {
+        "message": "Rate gain"
+    },
+    "indiConfigField_indi_attitude_max_tilt_rate": {
+        "message": "Max tilt rate"
+    },
+    "indiConfigField_indi_attitude_max_tilt_rateHelp": {
+        "message": "Limit on the roll/pitch rate commanded by the attitude loop."
+    },
+    "indiConfigField_indi_attitude_max_yaw_rate": {
+        "message": "Max yaw rate"
+    },
+    "indiConfigField_indi_attitude_max_yaw_rateHelp": {
+        "message": "Limit on the yaw rate commanded by the attitude loop."
+    },
+    "indiConfigField_indi_max_rate_setpoint": {
+        "message": "Max rate setpoint"
+    },
+    "indiConfigField_indi_max_rate_setpointHelp": {
+        "message": "Limit on the rate setpoint per axis, in every mode."
+    },
+    "indiConfigField_indi_manual_use_coordinated_yaw": {
+        "message": "Coordinated yaw"
+    },
+    "indiConfigField_indi_manual_use_coordinated_yawHelp": {
+        "message": "In angle mode, yaw about the vertical instead of the body axis."
+    },
+    "indiConfigField_indi_manual_max_upwards_accel": {
+        "message": "Max upwards acceleration"
+    },
+    "indiConfigField_indi_manual_max_upwards_accelHelp": {
+        "message": "Specific thrust at full throttle in manual modes. 255 uses the sum of the actuators' fz effectiveness."
+    },
+    "indiConfigField_indi_manual_max_tilt": {
+        "message": "Max tilt"
+    },
+    "indiConfigField_indi_manual_max_tiltHelp": {
+        "message": "Tilt at full stick deflection in angle mode."
+    },
+    "indiConfigField_indi_use_increment": {
+        "message": "Incremental INDI"
+    },
+    "indiConfigField_indi_use_incrementHelp": {
+        "message": "Off: solve the global (non-incremental) allocation problem, also used on the ground."
+    },
+    "indiConfigField_indi_use_accel_for_thrust": {
+        "message": "Use accelerometer for thrust"
+    },
+    "indiConfigField_indi_use_accel_for_thrustHelp": {
+        "message": "On: take the current specific thrust from the accelerometer. Off: from the actuator model and the fz effectiveness."
+    },
+    "indiConfigField_indi_use_rpm_dot_feedback": {
+        "message": "Use RPM derivative feedback"
+    },
+    "indiConfigField_indi_use_rpm_dot_feedbackHelp": {
+        "message": "Use the derivative of the measured motor speed (needs RPM telemetry) for the rotor inertia term."
+    },
+    "indiConfigField_indi_sync_lowpass_hz": {
+        "message": "Sync low-pass cut-off"
+    },
+    "indiConfigField_indi_sync_lowpass_hzHelp": {
+        "message": "2nd-order low-pass applied identically to gyro, accelerometer and actuator signals, to keep them synchronised."
+    },
+    "indiConfigField_indi_wls_axes_weights": {
+        "message": "Axis weights"
+    },
+    "indiConfigField_indi_act_num": {
+        "message": "Number of actuators"
+    },
+    "indiConfigField_indi_act_type": {
+        "message": "Type"
+    },
+    "indiConfigField_indi_act_time_constant_ms": {
+        "message": "Time constant"
+    },
+    "indiConfigField_indi_act_time_constant_msHelp": {
+        "message": "First-order time constant of the actuator, from command to speed or position."
+    },
+    "indiConfigField_indi_act_max_rpm": {
+        "message": "Max RPM"
+    },
+    "indiConfigField_indi_act_hover_rpm": {
+        "message": "Hover RPM"
+    },
+    "indiConfigField_indi_act_nonlinearity": {
+        "message": "Thrust nonlinearity"
+    },
+    "indiConfigField_indi_act_nonlinearityHelp": {
+        "message": "0: thrust linear in the command, 100: quadratic."
+    },
+    "indiConfigField_indi_act_min": {
+        "message": "Min"
+    },
+    "indiConfigField_indi_act_minHelp": {
+        "message": "Lower command limit. Always 0 for motors."
+    },
+    "indiConfigField_indi_act_max": {
+        "message": "Max"
+    },
+    "indiConfigField_indi_act_maxHelp": {
+        "message": "Upper command limit."
+    },
+    "indiConfigField_indi_act_g1_fx": {
+        "message": "fx"
+    },
+    "indiConfigField_indi_act_g1_fy": {
+        "message": "fy"
+    },
+    "indiConfigField_indi_act_g1_fz": {
+        "message": "fz"
+    },
+    "indiConfigField_indi_act_g1_roll": {
+        "message": "Roll"
+    },
+    "indiConfigField_indi_act_g1_pitch": {
+        "message": "Pitch"
+    },
+    "indiConfigField_indi_act_g1_yaw": {
+        "message": "Yaw"
+    },
+    "indiConfigField_indi_act_g2_roll": {
+        "message": "Roll"
+    },
+    "indiConfigField_indi_act_g2_pitch": {
+        "message": "Pitch"
+    },
+    "indiConfigField_indi_act_g2_yaw": {
+        "message": "Yaw"
+    },
+    "indiConfigField_indi_wls_act_penalties": {
+        "message": "Penalty"
+    },
+    "indiConfigField_indi_wls_act_penaltiesHelp": {
+        "message": "Weight of this actuator's deviation from its preferred state in the allocation."
+    },
+    "indiConfigField_indi_wls_act_preferred_state": {
+        "message": "Preferred state"
+    },
+    "indiConfigField_indi_use_rpm_ctl": {
+        "message": "RPM control"
+    },
+    "indiConfigField_indi_rpm_ctl_gain": {
+        "message": "Gain"
+    },
+    "indiConfigField_indi_rpm_ctl_delay": {
+        "message": "ESC delay"
+    },
+    "indiConfigField_indi_rpm_ctl_delayHelp": {
+        "message": "ESC command delay in control loop cycles."
+    },
+    "indiConfigField_indi_rpm_ctl_lpf_hz": {
+        "message": "Filter cut-off"
+    },
+    "indiConfigField_indi_use_motor_lead_lag": {
+        "message": "Motor lead-lag"
+    },
+    "indiConfigField_indi_act_time_constant_true_ms": {
+        "message": "True time constant"
+    },
+    "indiConfigField_indi_act_time_constant_des_ms": {
+        "message": "Desired time constant"
+    },
+    "indiConfigField_indi_ff_coefs": {
+        "message": "Coefficients"
+    },
+    "indiConfigField_indi_use_ff_filter": {
+        "message": "Feedforward filter"
+    },
+    "indiConfigField_indi_ff_filter_coefs": {
+        "message": "Filter K, z, p"
+    },
+    "indiConfigField_indi_use_attitude_lead_lag": {
+        "message": "Attitude lead-lag"
+    },
+    "indiConfigField_indi_attitude_coefs": {
+        "message": "Attitude coefficients"
+    },
+    "indiConfigField_indi_rate_coefs": {
+        "message": "Rate coefficients"
+    },
+    "indiConfigField_indi_use_gain_scheduling": {
+        "message": "Gain scheduling"
+    },
+    "indiConfigField_indi_gain_scheduling_type": {
+        "message": "Type"
+    },
+    "indiConfigField_indi_gain_schedule_ff": {
+        "message": "Schedule feedforward"
+    },
+    "indiConfigField_indi_inject_attitude_setpoints": {
+        "message": "Inject attitude setpoints"
+    },
+    "indiConfigField_indi_att_sp_injection_type": {
+        "message": "Type"
+    },
+    "indiConfigField_indi_att_sp_injection_typeHelp": {
+        "message": "0: none, 1: impulse, 2: doublet, 3: step."
+    },
+    "indiConfigField_indi_att_sp_injection_amplitude": {
+        "message": "Amplitude"
+    },
+    "indiConfigField_indi_att_sp_injection_duration": {
+        "message": "Duration"
+    },
+    "indiConfigField_indi_att_sp_injection_duration_down": {
+        "message": "Duration down"
+    },
+    "indiConfigField_indi_att_sp_injection_duration_downHelp": {
+        "message": "For a doublet, the duration of the negative pulse."
+    },
+    "indiConfigField_indi_inject_input_dist": {
+        "message": "Inject input disturbance"
+    },
+    "indiConfigField_indi_input_dist_amplitude": {
+        "message": "Amplitude"
+    },
+    "indiConfigField_indi_apply_dist_to_motor": {
+        "message": "Apply to"
+    },
+    "indiConfigField_indi_tails_use_scheduled": {
+        "message": "Scheduled tailsitter model"
+    },
+    "indiConfigField_indi_tails_use_sine": {
+        "message": "Sine model"
+    },
+    "indiConfigCalcTitle": {
+        "message": "Effectiveness from geometry"
+    },
+    "indiConfigCalcHelp": {
+        "message": "Computes G1 and G2 of a multirotor from its geometry, as calculateG1G2() of the firmware's simulation (PyNDIflight). Positions are relative to the centre of gravity, in the body frame: x forward, y right, z down. Spin is seen from above. Rotors are in INDI actuator order."
+    },
+    "indiConfigCalcPreset": {
+        "message": "Layout"
+    },
+    "indiConfigCalcArmLength": {
+        "message": "Arm length"
+    },
+    "indiConfigCalcPropsOut": {
+        "message": "Props out"
+    },
+    "indiConfigCalcFillRotors": {
+        "message": "Fill rotors from layout"
+    },
+    "indiConfigCalcMass": {
+        "message": "Mass"
+    },
+    "indiConfigCalcIxx": {
+        "message": "Inertia Ixx"
+    },
+    "indiConfigCalcIyy": {
+        "message": "Inertia Iyy"
+    },
+    "indiConfigCalcIzz": {
+        "message": "Inertia Izz"
+    },
+    "indiConfigCalcMaxThrust": {
+        "message": "Max thrust per rotor"
+    },
+    "indiConfigCalcTorqueCoef": {
+        "message": "Torque coefficient (drag torque / thrust)"
+    },
+    "indiConfigCalcRotorInertia": {
+        "message": "Rotor inertia"
+    },
+    "indiConfigCalcSpin": {
+        "message": "Spin"
+    },
+    "indiConfigCalcSpinCw": {
+        "message": "CW"
+    },
+    "indiConfigCalcSpinCcw": {
+        "message": "CCW"
+    },
+    "indiConfigCalcRemoveRotor": {
+        "message": "Remove rotor"
+    },
+    "indiConfigCalcAddRotor": {
+        "message": "Add rotor"
+    },
+    "indiConfigCalcControllable": {
+        "message": "Thrust, roll, pitch and yaw can be controlled independently."
+    },
+    "indiConfigCalcNotControllable": {
+        "message": "Thrust, roll, pitch and yaw can't be controlled independently. Check the positions and spin directions."
+    },
+    "indiConfigCalcHover": {
+        "message": "Hovers at {{u}} command, thrust-to-weight {{tw}}."
+    },
+    "indiConfigCalcNoHover": {
+        "message": "Can't hover with commands between 0 and 1: too heavy, or check the spin directions."
+    },
+    "indiConfigCalcClamped": {
+        "message": "Out of range, clamped: {{names}}"
+    },
+    "indiConfigCalcAlsoActuators": {
+        "message": "Also set {{n}} actuators, all motors"
+    },
+    "indiConfigCalcAlsoHoverRpm": {
+        "message": "Also set hover RPM from max RPM"
+    },
+    "indiConfigCalcApply": {
+        "message": "Apply to actuators"
+    },
+    "indiConfigCalcApplied": {
+        "message": "Effectiveness applied. Save to write it to the flight controller."
+    },
     "tabAutotune": { "message": "Autotune" },
     "tabBlackboxViewer": { "message": "Blackbox Viewer", "description": "Navigation sidebar label for the Blackbox log viewer tab" },
     "tabSimulation": { "message": "Simulation", "description": "Navigation sidebar label for the software-in-the-loop simulation tab" },
