@@ -114,6 +114,10 @@ export function FlightLogParser(logData) {
     //Private constants:
     // Indiflight logs far more fields per frame than Betaflight
     const FLIGHT_LOG_MAX_FRAME_LENGTH = 2048,
+        // "H Field I name" lists every main field in a single line: about 4.6 kB for 344 fields as of
+        // Indiflight bff9b05c. Same limit as blackbox_decode (FLIGHT_LOG_MAX_FRAME_HEADER_LENGTH), so
+        // a log that the Python log tools decode also opens here.
+        FLIGHT_LOG_MAX_HEADER_LINE_LENGTH = 16384,
         //Assume that even in the most woeful logging situation, we won't miss 10 seconds of frames
         MAXIMUM_TIME_JUMP_BETWEEN_FRAMES = 10 * 1000000,
         //Likewise for iteration count
@@ -1092,8 +1096,7 @@ export function FlightLogParser(logData) {
 
         const lineStart = stream.pos;
 
-        // Indiflight's "Field I name" header lines exceed 1024 characters
-        for (; stream.pos < lineStart + 4096 && stream.pos < stream.end; stream.pos++) {
+        for (; stream.pos < lineStart + FLIGHT_LOG_MAX_HEADER_LINE_LENGTH && stream.pos < stream.end; stream.pos++) {
             if (separatorPos === false && stream.data[stream.pos] === COLON) {
                 separatorPos = stream.pos;
             }
@@ -1104,6 +1107,13 @@ export function FlightLogParser(logData) {
         }
 
         if (stream.data[stream.pos] !== NEWLINE || separatorPos === false) {
+            if (separatorPos !== false && stream.pos >= lineStart + FLIGHT_LOG_MAX_HEADER_LINE_LENGTH) {
+                // dropping e.g. "Field I name" makes the whole log unreadable, so say why
+                const name = asciiArrayToString(stream.data.subarray(lineStart, separatorPos));
+                console.warn(
+                    `Header line "${name}" is longer than ${FLIGHT_LOG_MAX_HEADER_LINE_LENGTH} characters, ignored`,
+                );
+            }
             return;
         }
 

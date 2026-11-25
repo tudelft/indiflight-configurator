@@ -235,8 +235,8 @@ export function FlightLogIndex(logData) {
                 intraIndex.stats = parser.stats;
             }
 
-            // Did we not find any events in this log?
-            if (intraIndex.minTime === false) {
+            // Did we not find any events in this log? Keep a parse error from above, it says more
+            if (intraIndex.minTime === false && !intraIndex.error) {
                 if (sawEndMarker) {
                     intraIndex.error = "Logging paused, no data";
                 } else {
