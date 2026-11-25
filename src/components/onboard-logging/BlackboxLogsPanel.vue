@@ -189,6 +189,12 @@
 
             <UiBox :title="$t('blackboxLogsUploadTitle')" collapsible :default-open="false" class="mt-4">
                 <p class="text-sm text-muted">{{ $t("blackboxLogsUploadNote") }}</p>
+                <UAlert
+                    color="warning"
+                    variant="subtle"
+                    icon="i-lucide-key-round"
+                    :description="$t('blackboxLogsUploadKeyWarning')"
+                />
                 <UFormField :label="$t('blackboxLogsUploadUrl')">
                     <UInput
                         v-model="logbook.url"

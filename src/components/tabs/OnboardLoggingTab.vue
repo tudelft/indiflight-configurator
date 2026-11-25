@@ -60,6 +60,8 @@
                         <UiBox
                             v-if="showDebugFields"
                             :title="$t('onboardLoggingDebugFields')"
+                            collapsible
+                            :default-open="false"
                             v-show="blackboxConfigSupported"
                         >
                             <div class="blackboxDebugFieldsTable">
