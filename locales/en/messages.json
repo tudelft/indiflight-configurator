@@ -4506,7 +4506,7 @@
         "message": "Aircraft folder (optional)"
     },
     "blackboxLogsUploadFolderHelp": {
-        "message": "Stored as the folder of the log's name. A folder named after one fleet aircraft links the log to it."
+        "message": "Leave empty: the server reads the craft name from the log header. A folder named after one fleet aircraft overrides it."
     },
     "blackboxLogsUploadAuto": {
         "message": "Upload logs automatically after downloading them"
