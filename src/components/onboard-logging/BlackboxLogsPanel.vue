@@ -34,57 +34,6 @@
                 <UProgress :model-value="eraseProgress" :max="100" color="error" />
             </UiBox>
 
-            <UiBox v-if="progress" :title="$t('blackboxLogsProgressTitle')" class="mt-4">
-                <div class="flex flex-col gap-1">
-                    <div class="flex justify-between gap-2 text-sm">
-                        <span>
-                            {{
-                                $t("blackboxLogsProgressFile", {
-                                    index: progress.fileIndex + 1,
-                                    count: progress.fileCount,
-                                    name: progress.fileName,
-                                })
-                            }}
-                        </span>
-                        <span class="text-muted">
-                            {{
-                                $t("blackboxLogsProgressBytes", {
-                                    done: bytesToSize(progress.fileBytes),
-                                    total: bytesToSize(progress.fileSize),
-                                })
-                            }}
-                        </span>
-                    </div>
-                    <UProgress :model-value="percent(progress.fileBytes, progress.fileSize)" :max="100" />
-                </div>
-                <div v-if="progress.fileCount > 1" class="flex flex-col gap-1">
-                    <div class="flex justify-between gap-2 text-sm">
-                        <span>{{ $t("blackboxLogsProgressOverall") }}</span>
-                        <span class="text-muted">
-                            {{
-                                $t("blackboxLogsProgressBytes", {
-                                    done: bytesToSize(progress.doneBytes),
-                                    total: bytesToSize(progress.totalBytes),
-                                })
-                            }}
-                        </span>
-                    </div>
-                    <UProgress :model-value="percent(progress.doneBytes, progress.totalBytes)" :max="100" />
-                </div>
-                <div class="flex items-center justify-between gap-2">
-                    <span class="text-sm text-muted">
-                        {{ $t("blackboxLogsProgressRate", { rate: bytesToSize(Math.round(progress.rate)) }) }}
-                    </span>
-                    <UButton
-                        color="error"
-                        variant="soft"
-                        icon="i-lucide-x"
-                        :label="$t('blackboxLogsCancel')"
-                        @click="cancel"
-                    />
-                </div>
-            </UiBox>
-
             <UiBox :title="$t('blackboxLogsFilesTitle')" class="mt-4">
                 <div v-if="storage" class="flex flex-wrap items-center gap-2 text-sm">
                     <UIcon :name="storage === 'flash' ? 'i-lucide-cpu' : 'i-lucide-hard-drive'" class="size-4" />
@@ -215,6 +164,57 @@
                 </div>
             </template>
         </UModal>
+
+        <UiBox v-if="progress" :title="$t('blackboxLogsProgressTitle')" class="mt-4">
+            <div class="flex flex-col gap-1">
+                <div class="flex justify-between gap-2 text-sm">
+                    <span>
+                        {{
+                            $t("blackboxLogsProgressFile", {
+                                index: progress.fileIndex + 1,
+                                count: progress.fileCount,
+                                name: progress.fileName,
+                            })
+                        }}
+                    </span>
+                    <span class="text-muted">
+                        {{
+                            $t("blackboxLogsProgressBytes", {
+                                done: bytesToSize(progress.fileBytes),
+                                total: bytesToSize(progress.fileSize),
+                            })
+                        }}
+                    </span>
+                </div>
+                <UProgress :model-value="percent(progress.fileBytes, progress.fileSize)" :max="100" />
+            </div>
+            <div v-if="progress.fileCount > 1" class="flex flex-col gap-1">
+                <div class="flex justify-between gap-2 text-sm">
+                    <span>{{ $t("blackboxLogsProgressOverall") }}</span>
+                    <span class="text-muted">
+                        {{
+                            $t("blackboxLogsProgressBytes", {
+                                done: bytesToSize(progress.doneBytes),
+                                total: bytesToSize(progress.totalBytes),
+                            })
+                        }}
+                    </span>
+                </div>
+                <UProgress :model-value="percent(progress.doneBytes, progress.totalBytes)" :max="100" />
+            </div>
+            <div class="flex items-center justify-between gap-2">
+                <span class="text-sm text-muted">
+                    {{ $t("blackboxLogsProgressRate", { rate: bytesToSize(Math.round(progress.rate)) }) }}
+                </span>
+                <UButton
+                    color="error"
+                    variant="soft"
+                    icon="i-lucide-x"
+                    :label="$t('blackboxLogsCancel')"
+                    @click="cancel"
+                />
+            </div>
+        </UiBox>
 
         <div class="mt-4 flex flex-wrap items-center gap-2">
             <UButton
