@@ -25,6 +25,13 @@ describe("isIndiflight", () => {
         ).toBe(false);
     });
 
+    it("detects the Betaflight 2026 based port by its USE_INDIFLIGHT build option", () => {
+        const port = { flightControllerIdentifier: "BTFL", flightControllerVersion: "2026.6.2", apiVersion: "1.48.0" };
+        expect(isIndiflight({ ...port, buildOptions: ["USE_DSHOT", "USE_INDIFLIGHT"] })).toBe(true);
+        expect(isIndiflight({ ...port, buildOptions: ["USE_DSHOT"] })).toBe(false);
+        expect(isIndiflight(port)).toBe(false);
+    });
+
     it("handles missing or incomplete config", () => {
         expect(isIndiflight(undefined)).toBe(false);
         expect(

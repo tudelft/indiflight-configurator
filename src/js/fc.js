@@ -137,6 +137,8 @@ const FIRMWARE_BUILD_OPTIONS = {
     USE_FLIGHT_PLAN: 16427,
     USE_OPTICALFLOW: 16428,
     USE_RANGEFINDER: 16429,
+    // Indiflight (firmware msp_build_info.c), outside the cloud build option ranges
+    USE_INDIFLIGHT: 61441,
 };
 
 const FC = {

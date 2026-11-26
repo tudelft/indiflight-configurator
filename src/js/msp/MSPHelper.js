@@ -874,7 +874,9 @@ MspHelper.prototype.process_data = function (dataHandler) {
                     FC.CONFIG.buildInfo = String.fromCharCode.apply(null, buff);
 
                     // Indiflight sends up to 15 characters (hash plus an optional "+dirty" suffix)
-                    const gitRevisionLength = isIndiflight(FC.CONFIG) ? Math.min(15, data.remaining()) : 7;
+                    // (the 2026-based port, API 1.48+, sends upstream's 7 characters)
+                    const indiflight44 = isIndiflight(FC.CONFIG) && semver.lt(FC.CONFIG.apiVersion, API_VERSION_1_48);
+                    const gitRevisionLength = indiflight44 ? Math.min(15, data.remaining()) : 7;
                     buff = [];
                     for (let i = 0; i < gitRevisionLength; i++) {
                         buff.push(data.readU8());
