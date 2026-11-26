@@ -10,6 +10,7 @@ import MSPCodes from "./MSPCodes";
 import { MspCrcError } from "./mspErrors";
 import { API_VERSION_1_45, API_VERSION_1_46, API_VERSION_1_47, API_VERSION_1_48 } from "../data_storage";
 import EscProtocols from "../utils/EscProtocols";
+import { getSerialPortFunctions } from "./serialPortFunctions";
 import {
     BLACKBOX_LOG_STATUS,
     decodeDataflashReadReply,
@@ -73,32 +74,11 @@ function MspHelper() {
         "2000000",
         "2470000",
     ];
-    // needs to be identical to 'serialPortFunction_e' in 'src/main/io/serial.h' in betaflight
-    self.SERIAL_PORT_FUNCTIONS = {
-        MSP: 0,
-        GPS: 1,
-        TELEMETRY_FRSKY: 2,
-        TELEMETRY_HOTT: 3,
-        TELEMETRY_LTM: 4,
-        TELEMETRY_SMARTPORT: 5,
-        RX_SERIAL: 6,
-        BLACKBOX: 7,
-        TELEMETRY_MAVLINK: 9,
-        ESC_SENSOR: 10,
-        TBS_SMARTAUDIO: 11,
-        TELEMETRY_IBUS: 12,
-        IRC_TRAMP: 13,
-        RUNCAM_DEVICE_CONTROL: 14, // support communitate with RunCam Device
-        LIDAR_TF: 15,
-        FRSKY_OSD: 16,
-        VTX_MSP: 17,
-        // Indiflight
-        TELEMETRY_PI: 18,
-        HIL: 19,
-        ACTUATORS_T4: 20,
-        TELEMETRY_UROS: 21,
-        SERVOS_FEETECH: 22,
-    };
+    // needs to be identical to 'serialPortFunction_e' in 'src/main/io/serial.h' of the
+    // connected firmware, which depends on its API version (see serialPortFunctions.js)
+    Object.defineProperty(self, "SERIAL_PORT_FUNCTIONS", {
+        get: () => getSerialPortFunctions(FC.CONFIG?.apiVersion),
+    });
 
     self.REBOOT_TYPES = {
         FIRMWARE: 0,

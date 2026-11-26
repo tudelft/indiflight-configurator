@@ -1,7 +1,7 @@
 import FC from "../../js/fc";
 import { i18n } from "../../js/localization";
 import semver from "semver";
-import { API_VERSION_1_45, API_VERSION_1_47 } from "../../js/data_storage";
+import { API_VERSION_1_45, API_VERSION_1_47, API_VERSION_1_48 } from "../../js/data_storage";
 import { isIndiflight } from "../../js/utils/indiflight";
 
 export function usePortsRules() {
@@ -73,11 +73,14 @@ export function usePortsRules() {
         };
         functionRules.push(
             { name: "TELEMETRY_PI", ...telemetryRule },
-            { name: "TELEMETRY_UROS", ...telemetryRule },
             { name: "HIL", ...telemetryRule },
             { name: "ACTUATORS_T4", ...telemetryRule },
             { name: "SERVOS_FEETECH", groups: ["peripherals"], maxPorts: 1 },
         );
+        // UROS only exists in the 4.4 fork (API < 1.48), see serialPortFunctions.js
+        if (!semver.gte(FC.CONFIG.apiVersion, API_VERSION_1_48)) {
+            functionRules.push({ name: "TELEMETRY_UROS", ...telemetryRule });
+        }
     }
 
     for (const rule of functionRules) {
