@@ -74,6 +74,19 @@
             >
                 {{ $t("simulationOpenInFlightPlotter", { name: a.name }) }}
             </UButton>
+            <template v-for="a in viewerLogs" :key="`upload-${a.name}`">
+                <LogbookUploadState v-if="sim.uploads[a.name]" :upload="sim.uploads[a.name]" />
+                <UButton
+                    v-if="logbook.configured"
+                    size="xs"
+                    variant="ghost"
+                    icon="i-lucide-cloud-upload"
+                    :loading="uploadBusy(a.name)"
+                    @click="sim.uploadLogs([a.name])"
+                >
+                    {{ $t("simulationUploadLog", { name: a.name }) }}
+                </UButton>
+            </template>
         </div>
 
         <pre
@@ -91,6 +104,8 @@
 <script setup>
 import { computed, inject, nextTick, ref, watch } from "vue";
 import UiBox from "@/components/elements/UiBox.vue";
+import LogbookUploadState from "@/components/logbook/LogbookUploadState.vue";
+import { useLogbookStore } from "@/stores/logbook";
 import { useSimulationStore } from "@/stores/simulation";
 import FileSystem from "@/js/FileSystem";
 import { switchTab } from "@/js/tab_switch";
@@ -152,8 +167,10 @@ async function download(artifact) {
     }
 }
 
-// Blackbox logs the viewer can parse (the SIL writes .BFL; .BBL/.TXT for completeness)
-const viewerLogs = computed(() => (job.value.artifacts ?? []).filter((a) => ["bfl", "bbl", "txt"].includes(a.kind)));
+const viewerLogs = computed(() => sim.blackboxLogs);
+
+const logbook = useLogbookStore();
+const uploadBusy = (name) => ["queued", "uploading"].includes(sim.uploads[name]?.state);
 
 const opening = ref("");
 async function openInViewer(artifact) {

@@ -10,6 +10,8 @@
             </UiBox>
 
             <SimulationRun v-if="daemon.connected && sim.job" class="mt-4" />
+
+            <LogbookSettings :auto="false" attach-setup />
         </div>
     </BaseTab>
 </template>
@@ -21,6 +23,7 @@ import UiBox from "@/components/elements/UiBox.vue";
 import DaemonConnection from "./firmware-flasher/DaemonConnection.vue";
 import SimulationSetup from "./simulation/SimulationSetup.vue";
 import SimulationRun from "./simulation/SimulationRun.vue";
+import LogbookSettings from "@/components/logbook/LogbookSettings.vue";
 import { useLocalBuildStore } from "@/stores/localBuild";
 import { useSimulationStore } from "@/stores/simulation";
 import GUI from "@/js/gui";

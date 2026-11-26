@@ -4,10 +4,13 @@ import { get as getConfig, set as setConfig } from "@/js/ConfigStorage";
 import { parseConfig, mergeConfigs } from "@/js/indiflight/configParser";
 import { parseSimFlags, splitSimArgs } from "@/js/indiflight/simArgs";
 import { useLocalBuildStore } from "@/stores/localBuild";
+import { useLogbookStore } from "@/stores/logbook";
 
 const STORAGE_KEY = "simulation";
 const MAX_LOG_LINES = 5000;
 const FINISHED_STATES = ["success", "failed", "cancelled", "stopped"];
+// Artifact kinds the blackbox tooling can parse (the SIL writes .BFL; .BBL/.TXT for completeness)
+const BLACKBOX_KINDS = ["bfl", "bbl", "txt"];
 const SAFE_ARTIFACT_RE = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
 
 /** @typedef {"sims" | "profiles"} SimFileKind */
@@ -18,6 +21,7 @@ const SAFE_ARTIFACT_RE = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
  */
 export const useSimulationStore = defineStore("simulation", () => {
     const daemon = useLocalBuildStore();
+    const logbook = useLogbookStore();
     const saved = getConfig(STORAGE_KEY)[STORAGE_KEY] ?? {};
 
     const sim = ref(saved.sim ?? "");
@@ -40,6 +44,10 @@ export const useSimulationStore = defineStore("simulation", () => {
     const log = ref([]);
     const progress = reactive({ done: 0, total: null, status: "" });
     const starting = ref(false);
+    // Upload to the log database per artifact name: {state: "queued"|"uploading"|"uploaded"|"skipped"|"partial"|"failed", error?}
+    const uploads = ref({});
+    // Script and profile text of the simulation started here, which the job summary does not carry
+    let launched = null;
     let closeStream = null;
 
     const running = computed(() => starting.value || (!!job.value && !FINISHED_STATES.includes(job.value.state)));
@@ -191,10 +199,13 @@ export const useSimulationStore = defineStore("simulation", () => {
         if (profileModified.value) {
             request.profileText = editedText.profiles;
         }
+        uploads.value = {};
+        const setup = { sims: effectiveText("sims"), profiles: effectiveText("profiles") };
         starting.value = true;
         let id;
         try {
             ({ id } = await daemon.client.startSim(request));
+            launched = { id, ...setup };
             job.value = await daemon.client.job(id);
         } finally {
             starting.value = false;
@@ -217,6 +228,80 @@ export const useSimulationStore = defineStore("simulation", () => {
             throw new Error("Daemon returned an unexpected artifact name");
         }
         return daemon.client.artifactBlob(job.value.id, name);
+    }
+
+    /** Blackbox logs of the last job */
+    const blackboxLogs = computed(() => (job.value?.artifacts ?? []).filter((a) => BLACKBOX_KINDS.includes(a.kind)));
+
+    function setUpload(name, state, error) {
+        uploads.value = { ...uploads.value, [name]: { state, error } };
+    }
+
+    /** Text of the script or profile a job ran with, or null when it is no longer known. */
+    async function setupText(current, kind, name, edited) {
+        if (launched?.id === current.id) {
+            return launched[kind];
+        }
+        // After a page reload only the daemon's repo file is left: the run's file, unless the run used an edited one
+        return edited ? null : daemon.client.configFile(kind, name);
+    }
+
+    /**
+     * The script and profile the current job ran with, to attach to its logs.
+     * @returns {Promise<import("@/js/indiflight/logbookClient").LogAttachment[]>}
+     */
+    async function setupAttachments() {
+        const current = job.value;
+        const files = [];
+        for (const [kind, name, edited, ext, description] of [
+            ["sims", current.sim, current.custom?.sim, ".py", "Simulation script this log was made with"],
+            ["profiles", current.profile, current.custom?.profile, ".txt", "Profile this log was made with"],
+        ]) {
+            if (!name) {
+                continue;
+            }
+            const text = await setupText(current, kind, name, edited);
+            if (text) {
+                files.push({
+                    name: `${name.split("/").pop()}${ext}`,
+                    data: new Blob([text], { type: "text/plain" }),
+                    description,
+                });
+            }
+        }
+        return files;
+    }
+
+    /** Upload artifacts of the current job to the log database, one at a time. */
+    async function uploadLogs(names) {
+        const id = job.value?.id;
+        for (const name of names) {
+            setUpload(name, "queued");
+        }
+        let attachments = [];
+        try {
+            attachments = logbook.attachSimulationSetup ? await setupAttachments() : [];
+        } catch (error) {
+            console.error("Could not read the simulation setup for upload", error);
+            for (const name of names) {
+                setUpload(name, "failed", error.message);
+            }
+            return;
+        }
+        for (const name of names) {
+            // A newer job replaced the one these names belong to
+            if (job.value?.id !== id) {
+                return;
+            }
+            setUpload(name, "uploading");
+            try {
+                const { state, error } = await logbook.upload(name, await fetchArtifact(name), attachments);
+                setUpload(name, state, error);
+            } catch (error) {
+                console.error("Could not fetch the log for upload", error);
+                setUpload(name, "failed", error.message);
+            }
+        }
     }
 
     /** Loopback URL of the job's Three.js visualization, once it answers */
@@ -257,6 +342,9 @@ export const useSimulationStore = defineStore("simulation", () => {
         starting,
         running,
         visUrl,
+        blackboxLogs,
+        uploads,
+        uploadLogs,
         refresh,
         rescan,
         loadFile,

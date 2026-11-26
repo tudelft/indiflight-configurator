@@ -1,7 +1,8 @@
 /**
  * Client for the log database web UI (tudelft/paparazzi_log_parsing, `webui/`), upload side only.
  * Authenticates with an API key from the account page (`logdb_...`, scope `logs:upload`).
- * Routes: POST /api/logs/check, POST /api/upload (multipart), GET /api/ingest/<id>, GET /api/status.
+ * Routes: POST /api/logs/check, POST /api/upload (multipart), GET /api/ingest/<id>, GET /api/status,
+ * POST /api/attachments (raw body, metadata in the X-Attachment-Metadata header).
  */
 
 export class LogbookError extends Error {
@@ -32,10 +33,17 @@ export async function sha256Hex(data) {
     return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, "0")).join("");
 }
 
+/** @typedef {{name: string, data: Blob, description?: string}} LogAttachment */
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 export class LogbookClient {
     constructor(baseUrl, token) {
         this.baseUrl = normalizeServerUrl(baseUrl);
         this.token = (token ?? "").trim();
+        // How long to wait for the server to store an upload, and how often to ask
+        this.ingestTimeoutMs = 120_000;
+        this.ingestPollMs = 1000;
     }
 
     async request(path, init = {}) {
@@ -79,26 +87,83 @@ export class LogbookClient {
     }
 
     /**
-     * Upload one log unless this user already has it on the server.
+     * The id of the log an upload became. The server stores the file in the background, so this polls its receipt.
+     *
+     * @param {number} ingestId
+     * @returns {Promise<number>}
+     */
+    async waitForLogId(ingestId) {
+        const deadline = Date.now() + this.ingestTimeoutMs;
+        for (;;) {
+            const receipt = await this.request(`/api/ingest/${ingestId}`);
+            if (Number.isInteger(receipt.log_id)) {
+                return receipt.log_id;
+            }
+            if (receipt.status === "rejected" || receipt.status === "error") {
+                throw new LogbookError(receipt.error ?? "The server could not store the log", 0);
+            }
+            if (Date.now() >= deadline) {
+                throw new LogbookError("The server is still processing the upload", 0);
+            }
+            await sleep(this.ingestPollMs);
+        }
+    }
+
+    /**
+     * Attach a file to a log. The server links an identical file again instead of storing it twice, and a file with
+     * the same name but other content replaces the earlier version.
+     *
+     * @param {number} logId
+     * @param {LogAttachment} file
+     */
+    attach(logId, { name, data, description }) {
+        const metadata = { filename: name, description: description ?? "", targets: [{ kind: "log", id: logId }] };
+        return this.request("/api/attachments", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/octet-stream",
+                "X-Attachment-Metadata": encodeURIComponent(JSON.stringify(metadata)),
+            },
+            body: data,
+        });
+    }
+
+    /**
+     * Upload one log unless this user already has it on the server, then attach files to it.
      *
      * @param {string} name   stored name; a leading folder named after a fleet aircraft links the log to it
      * @param {Blob|Uint8Array} bytes
-     * @returns {Promise<{status: "accepted"|"skipped", ingestId?: number}>}
+     * @param {LogAttachment[]} [attachments]  files to attach to the log, also when the server already had it
+     * @returns {Promise<{status: "accepted"|"skipped", ingestId?: number, logId?: number, attachError?: string}>}
+     *   attachError: the log is on the server, but attaching the files failed
      */
-    async upload(name, bytes) {
+    async upload(name, bytes, attachments = []) {
         const blob = new Blob([bytes], { type: "application/octet-stream" });
         const known = await this.known(await sha256Hex(blob));
+        let result;
         if (known?.mine && known.has_log) {
-            return { status: "skipped" };
+            result = { status: "skipped", logId: known.id };
+        } else {
+            const form = new FormData();
+            form.append("names", name);
+            form.append("files", blob, name.split("/").pop());
+            const reply = await this.request("/api/upload", { method: "POST", body: form });
+            const receipt = reply.results?.[0];
+            if (receipt?.status !== "accepted" || !Number.isInteger(receipt.ingest_id)) {
+                throw new LogbookError(receipt?.reason ?? "The server did not accept the upload", 0);
+            }
+            result = { status: "accepted", ingestId: receipt.ingest_id };
         }
-        const form = new FormData();
-        form.append("names", name);
-        form.append("files", blob, name.split("/").pop());
-        const reply = await this.request("/api/upload", { method: "POST", body: form });
-        const receipt = reply.results?.[0];
-        if (receipt?.status !== "accepted" || !Number.isInteger(receipt.ingest_id)) {
-            throw new LogbookError(receipt?.reason ?? "The server did not accept the upload", 0);
+        if (attachments.length) {
+            try {
+                result.logId ??= await this.waitForLogId(result.ingestId);
+                for (const file of attachments) {
+                    await this.attach(result.logId, file);
+                }
+            } catch (error) {
+                result.attachError = error.message;
+            }
         }
-        return { status: "accepted", ingestId: receipt.ingest_id };
+        return result;
     }
 }

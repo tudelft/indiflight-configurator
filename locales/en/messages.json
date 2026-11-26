@@ -4535,6 +4535,36 @@
     "blackboxLogsUploadStateSkipped": {
         "message": "Already on server"
     },
+    "blackboxLogsUploadStatePartial": {
+        "message": "Uploaded, files not attached"
+    },
+    "logbookConfigDump": {
+        "message": "Attach current config dump"
+    },
+    "logbookConfigDumpHelp": {
+        "message": "Reads the flight controller's configuration (CLI dump all) and attaches it to the next log uploaded, then switches off. Needs automatic upload."
+    },
+    "logbookConfigDumpReading": {
+        "message": "Reading the configuration, the flight controller will reboot\u2026"
+    },
+    "logbookConfigDumpHeld": {
+        "message": "Configuration read at {{time}}. It goes to the next uploaded log only."
+    },
+    "logbookConfigDumpFailed": {
+        "message": "Could not read the configuration: {{error}}"
+    },
+    "logbookConfigDumpConfirmTitle": {
+        "message": "Read the configuration?"
+    },
+    "logbookConfigDumpConfirmText": {
+        "message": "The flight controller enters its CLI, prints its configuration and reboots, so the connection drops and comes back. Do this only if the current configuration is the one the log you are about to download was flown with."
+    },
+    "logbookConfigDumpConfirmCancel": {
+        "message": "Cancel"
+    },
+    "logbookConfigDumpConfirmOk": {
+        "message": "Read configuration"
+    },
     "blackboxLogsUploadStateFailed": {
         "message": "Upload failed"
     },
@@ -10553,6 +10583,15 @@
     },
     "simulationOpenInFlightPlotter": {
         "message": "Open {{name}} in Flight Plotter"
+    },
+    "simulationUploadAttachSetup": {
+        "message": "Attach the simulation script and profile to the uploaded log"
+    },
+    "simulationUploadAttachSetupHelp": {
+        "message": "The files this simulation ran with, including edits made here. They appear as attachments of the log on the server."
+    },
+    "simulationUploadLog": {
+        "message": "Upload {{name}} to log database"
     },
     "flightPlotterDrop": {
         "message": "Drop a blackbox log here, or click to choose a file"

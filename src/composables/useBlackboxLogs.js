@@ -660,20 +660,17 @@ export function useBlackboxLogs() {
         uploads.value = { ...uploads.value, [name]: { state, error } };
     }
 
-    async function uploadLog(name, bytes) {
+    async function uploadLog(name, bytes, attachments) {
         setUpload(name, "uploading");
-        try {
-            const { status } = await logbook.client().upload(logbook.storedName(name), bytes);
-            setUpload(name, status === "skipped" ? "skipped" : "uploaded");
-        } catch (error) {
-            console.error("Upload to the log database failed", error);
-            setUpload(name, "failed", error.message);
-        }
+        const { state, error } = await logbook.upload(name, bytes, attachments);
+        setUpload(name, state, error);
     }
 
     function queueUpload(name, bytes) {
         setUpload(name, "queued");
-        uploadQueue = uploadQueue.then(() => uploadLog(name, bytes));
+        // Taken now, not when the upload runs: the first log of a batch gets the dump and no other does
+        const dump = logbook.takeConfigDump();
+        uploadQueue = uploadQueue.then(() => uploadLog(name, bytes, dump ? [dump] : []));
         return uploadQueue;
     }
 

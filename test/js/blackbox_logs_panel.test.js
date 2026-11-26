@@ -12,8 +12,10 @@ import { openLogInBlackboxViewer } from "../../src/blackbox-viewer/vue_init";
 import { useFlightPlotterStore } from "../../src/stores/flightPlotter";
 import { useLogbookStore } from "../../src/stores/logbook";
 import { LogbookClient } from "../../src/js/indiflight/logbookClient";
+import { readCliDump } from "../../src/js/indiflight/cliDump";
 
 vi.mock("../../src/js/tab_switch", () => ({ switchTab: vi.fn() }));
+vi.mock("../../src/js/indiflight/cliDump", () => ({ readCliDump: vi.fn() }));
 vi.mock("../../src/blackbox-viewer/vue_init", () => ({ openLogInBlackboxViewer: vi.fn() }));
 
 async function flush() {
@@ -210,6 +212,87 @@ describe("BlackboxLogsPanel (virtual mode)", () => {
         expect(openLogInBlackboxViewer).not.toHaveBeenCalled();
         expect(switchTab).not.toHaveBeenCalled();
         expect(container.textContent).toContain("blackboxLogsStateCancelled");
+    });
+
+    describe("attach current config dump", () => {
+        // the last switch on the page: the one below the upload settings box
+        const switchButton = () => [...container.querySelectorAll("button[role='switch']")].at(-1);
+        const confirmButton = () =>
+            [...document.body.querySelectorAll("button")].find((b) =>
+                b.textContent.includes("logbookConfigDumpConfirmOk"),
+            );
+        const configure = async (autoUpload = true) => {
+            Object.assign(useLogbookStore(), { url: "https://logs.example.org", token: "logdb_x", autoUpload });
+            await flush(); // the switch is enabled by a computed
+        };
+
+        it("reads the configuration after a confirmation and holds it", async () => {
+            await configure();
+            readCliDump.mockResolvedValue("# version\nset a = 1");
+            await flush();
+            switchButton().click();
+            await flush();
+            expect(readCliDump).not.toHaveBeenCalled();
+
+            await vi.waitFor(() => expect(confirmButton()).toBeTruthy());
+            confirmButton().click();
+            await vi.waitFor(() => expect(useLogbookStore().configDump?.text).toBe("# version\nset a = 1"));
+            await flush();
+            expect(container.textContent).toContain("logbookConfigDumpHeld");
+            expect(switchButton().getAttribute("aria-checked")).toBe("true");
+
+            switchButton().click();
+            await flush();
+            expect(useLogbookStore().configDump).toBeNull();
+        });
+
+        it("reports a failed read and stays off", async () => {
+            await configure();
+            readCliDump.mockRejectedValue(new Error("did not finish"));
+            vi.spyOn(console, "error").mockImplementation(() => {});
+            switchButton().click();
+            await flush();
+            await vi.waitFor(() => expect(confirmButton()).toBeTruthy());
+            confirmButton().click();
+            await vi.waitFor(() => expect(container.textContent).toContain("logbookConfigDumpFailed"));
+            expect(useLogbookStore().configDump).toBeNull();
+            expect(switchButton().getAttribute("aria-checked")).toBe("false");
+        });
+
+        it("cannot be switched on without automatic upload", async () => {
+            await configure(false);
+            await flush();
+            expect(switchButton().disabled).toBe(true);
+        });
+
+        it("goes to the first uploaded log only and then switches itself off", async () => {
+            await configure();
+            useLogbookStore().configDump = { text: "set a = 1", at: new Date() };
+            const upload = vi
+                .spyOn(LogbookClient.prototype, "upload")
+                .mockResolvedValue({ status: "accepted", ingestId: 1 });
+            vi.spyOn(FileSystem, "canPickSaveDirectory").mockReturnValue(true);
+            vi.spyOn(FileSystem, "pickSaveDirectory").mockResolvedValue({ name: "logs" });
+            vi.spyOn(FileSystem, "createFileInDirectory").mockImplementation(async (_dir, name) => ({ name }));
+            vi.spyOn(FileSystem, "openFile").mockResolvedValue("writable");
+            vi.spyOn(FileSystem, "writeChunck").mockResolvedValue();
+            vi.spyOn(FileSystem, "closeFile").mockResolvedValue();
+
+            container.querySelector("button[role='checkbox']").click();
+            await flush();
+            [...container.querySelectorAll("button")]
+                .find((b) => b.textContent.includes("blackboxLogsDownload"))
+                .click();
+
+            await vi.waitFor(() => expect(upload).toHaveBeenCalledTimes(3), { timeout: 5000 });
+            const attachments = upload.mock.calls.map((c) => c[2]);
+            expect(attachments.map((a) => a.length)).toEqual([1, 0, 0]);
+            expect(attachments[0][0].name).toBe("config_dump_all.txt");
+            expect(await attachments[0][0].data.text()).toBe("set a = 1");
+            expect(useLogbookStore().configDump).toBeNull();
+            await flush();
+            expect(switchButton().getAttribute("aria-checked")).toBe("false");
+        });
     });
 
     // Runs last: the virtual FC keeps its (now empty) log list for the rest of the file.

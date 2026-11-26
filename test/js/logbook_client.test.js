@@ -89,4 +89,103 @@ describe("LogbookClient", () => {
         );
         await expect(new LogbookClient("https://s", "k").upload("a.BFL", new Uint8Array([1]))).rejects.toThrow("bad");
     });
+
+    describe("attachments", () => {
+        const setup = () => [
+            { name: "exampleQuadSim.py", data: new Blob(["print(1)"]), description: "script" },
+            { name: "my profile.txt", data: new Blob(["set a = 1"]) },
+        ];
+
+        /** A server that stores an upload after `pending` ingest polls. */
+        function server({ known = {}, pending = 0, ingest = { status: "stored" }, attachStatus = 201 } = {}) {
+            const calls = [];
+            let polls = 0;
+            vi.stubGlobal(
+                "fetch",
+                vi.fn(async (url, init) => {
+                    calls.push({ url, init });
+                    if (url.endsWith("/api/logs/check")) {
+                        return json({ known });
+                    }
+                    if (url.endsWith("/api/upload")) {
+                        return json({ results: [{ status: "accepted", ingest_id: 7 }] });
+                    }
+                    if (url.endsWith("/api/ingest/7")) {
+                        return json(
+                            ++polls > pending
+                                ? { ...ingest, log_id: ingest.status === "stored" ? 42 : null }
+                                : { status: "hashing", log_id: null },
+                        );
+                    }
+                    return json({ id: 1, duplicate: false }, attachStatus);
+                }),
+            );
+            return calls;
+        }
+
+        const attachCalls = (calls) => calls.filter((c) => c.url.endsWith("/api/attachments"));
+        const client = () => Object.assign(new LogbookClient("https://s", "k"), { ingestPollMs: 0 });
+
+        it("attaches the files to the new log once the server has stored it", async () => {
+            const calls = server({ pending: 2 });
+            const result = await client().upload("Hex 1/LOG00001.BFL", new Uint8Array([1]), setup());
+
+            expect(result).toEqual({ status: "accepted", ingestId: 7, logId: 42 });
+            expect(calls.filter((c) => c.url.endsWith("/api/ingest/7"))).toHaveLength(3);
+            const sent = attachCalls(calls);
+            expect(sent).toHaveLength(2);
+            expect(sent[0].init.headers.get("Authorization")).toBe("Bearer k");
+            const metadata = JSON.parse(decodeURIComponent(sent[0].init.headers.get("X-Attachment-Metadata")));
+            expect(metadata).toEqual({
+                filename: "exampleQuadSim.py",
+                description: "script",
+                targets: [{ kind: "log", id: 42 }],
+            });
+            // names with spaces survive the header
+            expect(JSON.parse(decodeURIComponent(sent[1].init.headers.get("X-Attachment-Metadata"))).filename).toBe(
+                "my profile.txt",
+            );
+            expect(await sent[0].init.body.text()).toBe("print(1)");
+        });
+
+        it("attaches to a log the server already had without uploading or polling", async () => {
+            const known = { has_log: true, mine: true, id: 5 };
+            const calls = server({ known: { [await sha256Hex(new Uint8Array([9]))]: known } });
+            const result = await client().upload("a.BFL", new Uint8Array([9]), setup());
+
+            expect(result).toEqual({ status: "skipped", logId: 5 });
+            expect(calls.some((c) => c.url.endsWith("/api/upload") || c.url.includes("/api/ingest/"))).toBe(false);
+            expect(
+                JSON.parse(decodeURIComponent(attachCalls(calls)[0].init.headers.get("X-Attachment-Metadata"))).targets,
+            ).toEqual([{ kind: "log", id: 5 }]);
+        });
+
+        it("keeps the upload and reports when the server rejects the log or the attachment", async () => {
+            server({ ingest: { status: "rejected", error: "empty log file" } });
+            expect(await client().upload("a.BFL", new Uint8Array([1]), setup())).toMatchObject({
+                status: "accepted",
+                attachError: "empty log file",
+            });
+
+            const calls = server({ attachStatus: 403 });
+            const result = await client().upload("a.BFL", new Uint8Array([1]), setup());
+            expect(result.status).toBe("accepted");
+            expect(result.attachError).toBeTruthy();
+            expect(attachCalls(calls)).toHaveLength(1); // stops at the first refusal
+        });
+
+        it("gives up waiting for a log that is never stored", async () => {
+            server({ pending: Infinity });
+            const c = client();
+            c.ingestTimeoutMs = 5;
+            c.ingestPollMs = 2;
+            expect((await c.upload("a.BFL", new Uint8Array([1]), setup())).attachError).toMatch(/still processing/);
+        });
+
+        it("does not poll or attach without attachments", async () => {
+            const calls = server();
+            await client().upload("a.BFL", new Uint8Array([1]));
+            expect(calls.some((c) => c.url.includes("/api/ingest/") || c.url.endsWith("/api/attachments"))).toBe(false);
+        });
+    });
 });
