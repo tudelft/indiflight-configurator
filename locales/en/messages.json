@@ -3639,6 +3639,21 @@
     "flightPlanSpeed": {
         "message": "Speed <span class=\"units\">knots</span>"
     },
+    "flightPlanAltitudeMetric": {
+        "message": "Altitude <span class=\"units\">m AMSL</span>"
+    },
+    "flightPlanSpeedMetric": {
+        "message": "Speed <span class=\"units\">m/s</span>"
+    },
+    "flightPlanUnits": {
+        "message": "Display units of the flight plan"
+    },
+    "flightPlanUnitsMetric": {
+        "message": "Metric (m, m/s)"
+    },
+    "flightPlanUnitsImperial": {
+        "message": "Imperial (ft, kts)"
+    },
     "flightPlanType": {
         "message": "Waypoint Type"
     },

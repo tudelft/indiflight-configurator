@@ -37,24 +37,24 @@
                 />
             </SettingRow>
 
-            <SettingRow v-if="showAltitude" :label="$t('flightPlanAltitude')" full-width>
+            <SettingRow v-if="showAltitude" :label="altitudeLabel" full-width>
                 <UInputNumber
                     v-model="form.altitude"
-                    :step="1"
+                    :step="altitudeStep"
                     :min="0"
-                    :max="50000"
+                    :max="altitudeMax"
                     required
                     :aria-label="$t('flightPlanAltitude')"
                     class="w-48"
                 />
             </SettingRow>
 
-            <SettingRow v-if="showSpeed" :label="$t('flightPlanSpeed')" full-width>
+            <SettingRow v-if="showSpeed" :label="speedLabel" full-width>
                 <UInputNumber
                     v-model="form.speed"
                     :step="0.1"
                     :min="0"
-                    :max="500"
+                    :max="speedMax"
                     required
                     :aria-label="$t('flightPlanSpeed')"
                     class="w-48"
@@ -114,6 +114,14 @@ import { useTranslation } from "i18next-vue";
 import Dialog from "@/components/elements/Dialog.vue";
 import SettingRow from "@/components/elements/SettingRow.vue";
 import { useFlightPlan } from "@/composables/useFlightPlan";
+import { useFlightPlanUnits } from "@/composables/useFlightPlanUnits";
+import {
+    FLIGHT_PLAN_UNITS,
+    altitudeFromDisplay,
+    altitudeToDisplay,
+    speedFromDisplay,
+    speedToDisplay,
+} from "@/js/utils/flightPlanUnits";
 
 const { t } = useTranslation();
 const {
@@ -177,13 +185,26 @@ const durationAriaLabel = computed(() =>
     form.type === "delay" ? t("flightPlanDelayDurationAria") : t("flightPlanDurationAria"),
 );
 
+// The form holds altitude and speed in the selected display units; the
+// waypoint model stays in feet / knots (converted in buildPayload()).
+const { units } = useFlightPlanUnits();
+const isMetricUnits = computed(() => units.value === FLIGHT_PLAN_UNITS.METRIC);
+const altitudeLabel = computed(() => t(isMetricUnits.value ? "flightPlanAltitudeMetric" : "flightPlanAltitude"));
+const speedLabel = computed(() => t(isMetricUnits.value ? "flightPlanSpeedMetric" : "flightPlanSpeed"));
+const altitudeStep = computed(() => (isMetricUnits.value ? 0.1 : 1));
+const altitudeMax = computed(() => altitudeToDisplay(50000, units.value));
+const speedMax = computed(() => speedToDisplay(500, units.value));
+const toFeet = (value) => altitudeFromDisplay(value, units.value);
+const toKnots = (value) => speedFromDisplay(value, units.value);
+
 // Watch for editing waypoint changes and populate form
 watch(editingWaypoint, (waypoint) => {
     if (waypoint) {
         form.latitude = Number(waypoint.latitude.toFixed(6));
         form.longitude = Number(waypoint.longitude.toFixed(6));
-        form.altitude = waypoint.altitude;
-        form.speed = waypoint.speed;
+        form.altitude = altitudeToDisplay(waypoint.altitude, units.value);
+        // YAW_RATE keeps deg/s in the speed slot
+        form.speed = waypoint.type === "yaw_rate" ? waypoint.speed : speedToDisplay(waypoint.speed, units.value);
         form.type = waypoint.type;
         form.duration = waypoint.duration;
         form.pattern = waypoint.pattern;
@@ -227,7 +248,7 @@ const buildPayload = () => {
     const base = { type: form.type, latitude: 0, longitude: 0, altitude: 0, speed: 0, duration: 0, pattern: "circle" };
     switch (form.type) {
         case "alt_change":
-            return { ...base, altitude: form.altitude };
+            return { ...base, altitude: toFeet(form.altitude) };
         case "delay":
             return { ...base, duration: form.duration };
         case "yaw_rate":
@@ -237,8 +258,8 @@ const buildPayload = () => {
                 ...base,
                 latitude: form.latitude,
                 longitude: form.longitude,
-                altitude: form.altitude,
-                speed: form.speed,
+                altitude: toFeet(form.altitude),
+                speed: toKnots(form.speed),
                 duration: form.duration,
                 pattern: form.pattern,
             };
@@ -247,8 +268,8 @@ const buildPayload = () => {
                 ...base,
                 latitude: form.latitude,
                 longitude: form.longitude,
-                altitude: form.altitude,
-                speed: form.speed,
+                altitude: toFeet(form.altitude),
+                speed: toKnots(form.speed),
             };
     }
 };
@@ -257,8 +278,8 @@ const buildPayload = () => {
 const resetForm = () => {
     form.latitude = 0;
     form.longitude = 0;
-    form.altitude = 400;
-    form.speed = 10;
+    form.altitude = altitudeToDisplay(400, units.value);
+    form.speed = speedToDisplay(10, units.value);
     form.type = "flyover";
     form.duration = 1;
     form.pattern = "circle";

@@ -56,6 +56,13 @@
 
         <!-- Bottom toolbar -->
         <div class="content_toolbar toolbar_fixed_bottom flex items-center gap-2">
+            <USelect
+                v-model="units"
+                :items="unitItems"
+                :aria-label="$t('flightPlanUnits')"
+                :title="$t('flightPlanUnits')"
+                class="w-36"
+            />
             <UButton variant="soft" color="error" @click="handleClear">
                 {{ $t("flightPlanClear") }}
             </UButton>
@@ -79,11 +86,19 @@ import WaypointEditor from "./FlightPlan/WaypointEditor.vue";
 import FlightPlanMap from "./FlightPlan/FlightPlanMap.vue";
 import ElevationProfile from "./FlightPlan/ElevationProfile.vue";
 import { useFlightPlan } from "@/composables/useFlightPlan";
+import { useFlightPlanUnits } from "@/composables/useFlightPlanUnits";
+import { FLIGHT_PLAN_UNITS } from "@/js/utils/flightPlanUnits";
 import { useConnectionStore } from "@/stores/connection";
 import FC from "@/js/fc";
 import GUI from "@/js/gui";
 import { gui_log } from "@/js/gui_log";
 import { i18n } from "@/js/localization";
+
+const { units } = useFlightPlanUnits();
+const unitItems = computed(() => [
+    { label: i18n.getMessage("flightPlanUnitsMetric"), value: FLIGHT_PLAN_UNITS.METRIC },
+    { label: i18n.getMessage("flightPlanUnitsImperial"), value: FLIGHT_PLAN_UNITS.IMPERIAL },
+]);
 
 const { loadFromFC, saveToFC, clearOnFC, clearPlan, loadPlan, waypoints } = useFlightPlan();
 const connectionStore = useConnectionStore();

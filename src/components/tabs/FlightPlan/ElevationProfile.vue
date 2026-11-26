@@ -9,16 +9,16 @@
                     <strong>{{ $t("flightPlanFlightTime") }}:</strong> {{ totalFlightTime }}
                 </span>
                 <span class="stat">
-                    <strong>{{ $t("flightPlanMinAlt") }}:</strong> {{ minAltitude }}ft
+                    <strong>{{ $t("flightPlanMinAlt") }}:</strong> {{ alt(minAltitude) }}
                 </span>
                 <span class="stat">
-                    <strong>{{ $t("flightPlanMaxAlt") }}:</strong> {{ maxAltitude }}ft
+                    <strong>{{ $t("flightPlanMaxAlt") }}:</strong> {{ alt(maxAltitude) }}
                 </span>
                 <span class="stat">
-                    <strong>{{ $t("flightPlanGroundElev") }}:</strong> {{ groundElevation }}ft
+                    <strong>{{ $t("flightPlanGroundElev") }}:</strong> {{ alt(groundElevation) }}
                 </span>
                 <span class="stat">
-                    <strong>{{ $t("flightPlanMaxGroundElev") }}:</strong> {{ maxGroundElevation }}ft
+                    <strong>{{ $t("flightPlanMaxGroundElev") }}:</strong> {{ alt(maxGroundElevation) }}
                 </span>
             </div>
 
@@ -49,7 +49,7 @@
                             class="axis-label"
                             text-anchor="end"
                         >
-                            {{ tick.value }}ft
+                            {{ tick.value }}{{ altitudeUnit(units) }}
                         </text>
                     </g>
 
@@ -174,7 +174,7 @@
                             class="tooltip-text"
                             text-anchor="middle"
                         >
-                            {{ $t("flightPlanAlt") }}: {{ hoveredPoint.altitude }}ft
+                            {{ $t("flightPlanAlt") }}: {{ alt(hoveredPoint.altitude) }}
                         </text>
                         <text
                             :x="hoveredPoint.tooltipX"
@@ -200,6 +200,17 @@ import { ref, computed, watch } from "vue";
 import UiBox from "@/components/elements/UiBox.vue";
 import { useFlightPlan } from "@/composables/useFlightPlan";
 import { METERS_TO_FEET } from "@/js/utils/common";
+import { useFlightPlanUnits } from "@/composables/useFlightPlanUnits";
+import {
+    altitudeFromDisplay,
+    altitudeToDisplay,
+    altitudeUnit,
+    formatDistance as formatDistanceUnits,
+} from "@/js/utils/flightPlanUnits";
+
+// The chart works in feet internally; labels follow the selected display units.
+const { units } = useFlightPlanUnits();
+const alt = (feet) => `${altitudeToDisplay(feet, units.value)}${altitudeUnit(units.value)}`;
 
 const { positionalWaypoints, selectedWaypointUid, selectWaypoint } = useFlightPlan();
 // Modifier waypoints (lat/lon = 0) would otherwise skew distance and altitude.
@@ -290,11 +301,8 @@ const interpolatePoint = (lat1, lon1, lat2, lon2, fraction) => {
     };
 };
 
-// Format distance for display (convert meters to nautical miles)
-const formatDistance = (meters) => {
-    const nauticalMiles = meters * METERS_TO_NAUTICAL_MILES;
-    return `${nauticalMiles.toFixed(2)}nm`;
-};
+// Format distance for display (nm or m/km)
+const formatDistance = (meters) => formatDistanceUnits(meters, units.value);
 
 // Calculate profile points with cumulative distance
 const profilePoints = computed(() => {
@@ -399,8 +407,9 @@ const combinedMax = computed(() => {
 
 // Y-axis ticks
 const yAxisTicks = computed(() => {
-    const min = 0; // Always start at sea level (0 ft AMSL)
-    const max = combinedMax.value;
+    // Ticks are round numbers in the display unit, placed on the feet scale
+    const min = 0; // Always start at sea level (0 AMSL)
+    const max = altitudeToDisplay(combinedMax.value, units.value);
     const range = max - min;
     const tickCount = 5;
     const step = Math.ceil(range / (tickCount - 1) / 10) * 10 || 50; // Round to nearest 10
@@ -410,7 +419,7 @@ const yAxisTicks = computed(() => {
 
     for (let i = 0; i < tickCount; i++) {
         const value = startValue + i * step;
-        const y = scaleY(value);
+        const y = scaleY(altitudeFromDisplay(value, units.value));
         ticks.push({ value, y });
     }
 

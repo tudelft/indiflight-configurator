@@ -353,9 +353,9 @@ export function useFlightPlan() {
             uid: crypto.randomUUID(),
             latitude: Number.parseFloat(parts[3]),
             longitude: Number.parseFloat(parts[4]),
-            altitude: Math.round(altCm / FEET_TO_CM),
+            altitude: Math.round((altCm / FEET_TO_CM) * 100) / 100,
             // YAW_RATE stores degrees/sec in the speed slot, not cm/s.
-            speed: type === "yaw_rate" ? speedRaw : Math.round((speedRaw / KNOTS_TO_CMS) * 10) / 10,
+            speed: type === "yaw_rate" ? speedRaw : Math.round((speedRaw / KNOTS_TO_CMS) * 100) / 100,
             type,
             duration: Math.round((durationDs / MINUTES_TO_DECISECONDS) * 10) / 10,
             pattern: CLI_TO_PATTERN[patternName] ?? "orbit",
