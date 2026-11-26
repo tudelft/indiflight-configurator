@@ -99,6 +99,39 @@ function vbatToVolts(flightLog) {
     return (v) => flightLog.vbatADCToMillivolts(v) / 1000;
 }
 
+/**
+ * The fields the viewer's FlightLog adds to the logged ones (addComputedFieldNames in flightlog.js), by base name.
+ * Everything else in getMainFieldNames() is a field of the log.
+ */
+const VIEWER_COMPUTED = {
+    heading:
+        "roll, pitch, yaw of the attitude estimate in rad, from the logged quaternion or else from fusing gyro and " +
+        "accelerometer; pitch has the opposite sign of the NED convention (NWU), yaw runs 0 to 2π",
+    axisSum:
+        "sum of the logged P, I, D, F and S terms of the axis, limited to the configured PID sum limit, normalized",
+    rcCommands:
+        "setpoint scaled for display: roll, pitch, yaw in rad/s, throttle in [0, 1] (from setpoint, or for " +
+        "old logs from rcCommand and the configured rates)",
+    axisError: "rad/s, setpoint minus filtered gyro, per axis",
+    gpsCartesianCoords:
+        "m, GPS position in a Cartesian frame around the first GPS fix of the log (0 while fewer " +
+        "than 5 satellites)",
+    gpsDistance: "m, horizontal distance to the first GPS fix of the log (0 while fewer than 5 satellites)",
+    gpsHomeAzimuth: "rad, bearing from the aircraft to the first GPS fix (0 while fewer than 5 satellites)",
+    gpsTrajectoryTiltAngle: "rad, tilt of the GPS NED velocity vector",
+};
+
+/**
+ * How a field the viewer computes (rather than the flight controller logging) came about.
+ * @param {string} fieldName
+ * @returns {string|null}  null for a field of the log
+ */
+export function computedFieldDescription(fieldName) {
+    const [, base] = /^(\w+?)(?:\[\d+\])?$/.exec(fieldName) ?? [];
+    const how = VIEWER_COMPUTED[base];
+    return how ? `Computed here, not logged: ${how}.` : null;
+}
+
 // bit masks and absolute times need more than float32's 24 bit mantissa
 const F64_FIELDS = new Set([
     "loopIteration",
@@ -113,8 +146,9 @@ const F64_FIELDS = new Set([
 /**
  * All frames of the opened log as SI columns.
  * @param {import("./flightlog.js").FlightLog} flightLog  with the log already opened (openLog)
- * @returns {{time: Float64Array, columns: Object<string, Float32Array|Float64Array>, events: {t: number, name: string, kind: string}[]}}
- *          time in seconds since power-up (the log's time base)
+ * @returns {{time: Float64Array, columns: Object<string, Float32Array|Float64Array>, events: {t: number, name: string, kind: string}[], descriptions: Object<string, string>}}
+ *          time in seconds since power-up (the log's time base); descriptions only for the columns the viewer
+ *          computed itself, which the others are not
  */
 export function flightLogToSI(flightLog) {
     const chunks = flightLog.getChunksInTimeRange(flightLog.getMinTime(), flightLog.getMaxTime());
@@ -135,6 +169,13 @@ export function flightLogToSI(flightLog) {
         return a;
     });
     const conv = names.map((name) => fieldToSI(flightLog, name));
+    const descriptions = {};
+    for (const name of names) {
+        const how = computedFieldDescription(name);
+        if (how) {
+            descriptions[name] = how;
+        }
+    }
 
     const events = [];
     let r = 0;
@@ -154,7 +195,7 @@ export function flightLogToSI(flightLog) {
             }
         }
     }
-    return { time, columns, events };
+    return { time, columns, events, descriptions };
 }
 
 // flight mode changes come from flightModeFlags instead, the viewer shows these too

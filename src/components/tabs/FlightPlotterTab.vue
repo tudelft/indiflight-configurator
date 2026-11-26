@@ -134,6 +134,29 @@ async function openBytes(data, name) {
     }
 }
 
+/** file name and comment block of the CSV export: what the file is and where it came from */
+function csvOptions(index) {
+    const cfg = flightLog.getSysConfig();
+    const stem = fileName.value.replace(/\.[^.]*$/, "");
+    const info = [
+        ["Source file", fileName.value + (logItems.value.length > 1 ? `, log ${index + 1}` : "")],
+        ["Firmware", cfg["Firmware revision"]],
+        ["Board", cfg["Board information"]],
+        ["Craft name", cfg["Craft name"]],
+        ["Log start", cfg["Log start datetime"]],
+    ];
+    return {
+        filename: `${stem}${logItems.value.length > 1 ? `-log${index + 1}` : ""}.si.csv`,
+        header: [
+            "Indiflight Configurator, Flight Plotter: decoded flight log in SI units",
+            ...info.filter(([, v]) => v).map(([k, v]) => `${k}: ${v}`),
+            "Logged signals are scaled to SI (angles in rad, rates in rad/s, m, m/s, V, A; motor and stick signals " +
+                "normalized to [0, 1] or [-1, 1]). Signals without a known unit, such as counters and bit masks " +
+                "(loopIteration, flightModeFlags, stateFlags), are the logged values.",
+        ],
+    };
+}
+
 async function showLog(index) {
     if (!flightLog || index == null) {
         return;
@@ -165,6 +188,7 @@ async function showLog(index) {
             crafts: plot.crafts,
             signals: plot.signals,
             popoutUrl: POPOUT_URL,
+            csv: csvOptions(index),
             layoutName: `indiflight-${plot.craft.type}-layout`,
             // the user's edits, kept per craft type; the toolbar's reset returns to the built-in layout
             layout: adaptSavedLayout(store.savedLayout(plot.craft.type), plot),

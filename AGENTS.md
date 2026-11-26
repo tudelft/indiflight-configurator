@@ -212,6 +212,10 @@ Add its `tab*` label in `locales/en/messages.json`. To switch tabs from code, ca
   harmonised.
 - To hand a log over from code, call `useFlightPlotterStore().openLog(bytes, name)`, then
   `switchTab("flight_plotter", { mode: "shared" })`. The Simulation tab does this.
+- The toolbar's CSV button (library `exportCsv()`) saves every column as SI. Columns in `data.derived` are prefixed
+  `calc:` and described in the file's comment block. These are the viewer's own fields (`VIEWER_COMPUTED` in
+  `flightlog_si.js`, to keep in step with `addComputedFieldNames()` in `flightlog.js`) and those of `addDerived()`.
+  A new computed signal needs a description, or it is exported as if it were logged.
 - The layout is editable: panels, tabs, the craft and its rotors, plus JSON export and import of the whole layout or
   of single tabs (`.tab.json`). The format is the
   library's (`parseLayout()` in its `layout.js`). `indiflightPlot()` supplies the initial layout, which the toolbar's

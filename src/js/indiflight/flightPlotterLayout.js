@@ -346,7 +346,8 @@ export function adaptSavedLayout(saved, plot) {
 
 /**
  * FlightPlotter options for an Indiflight log.
- * @param {{time: Float64Array, columns: Object<string, ArrayLike<number>>, events: object[]}} si  from flightLogToSI()
+ * @param {{time: Float64Array, columns: Object<string, ArrayLike<number>>, events: object[], descriptions?: Object<string, string>}} si
+ *        from flightLogToSI()
  * @param {string[]} modeNames  flight mode name per bit of flightModeFlags
  * @param {Object<string, string>} [headers]  header values the parser doesn't know (extraHeaders()), for the INDI
  *                                            actuator setup
@@ -356,14 +357,15 @@ export function indiflightPlot(si, modeNames, headers = {}) {
     const craft = detectCraft(columns, headers);
     const crafts = craftChoices(columns, craft);
     const signals = signalChoices(columns, craft);
-    const descriptions = addDerived(time, columns, craft.Ns);
+    // the CSV export marks everything with a description as computed: the viewer's fields and our own
+    const descriptions = { ...si.descriptions, ...addDerived(time, columns, craft.Ns) };
     const events = [...si.events];
     if (columns.flightModeFlags) {
         events.push(...bitChangeEvents(time, columns.flightModeFlags, modeNames));
     }
     return {
         craft,
-        data: { time, columns, events, descriptions },
+        data: { time, columns, events, descriptions, derived: Object.keys(descriptions) },
         tabs: tabs(columns, craft),
         viewport: { ...viewport(columns), ...crafts[0].viewport, ...signals[0].viewport, signals: signals[0].label },
         crafts,
