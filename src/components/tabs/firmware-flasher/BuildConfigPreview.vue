@@ -147,15 +147,11 @@
                         </UButton>
                     </span>
                 </div>
-                <UTextarea
+                <HighlightedText
                     :model-value="store.effectiveText(file.kind)"
-                    :rows="18"
-                    :disabled="readonly"
-                    autoresize
-                    :maxrows="30"
-                    spellcheck="false"
-                    class="w-full"
-                    :ui="{ base: 'font-mono text-xs' }"
+                    :lang="file.kind === 'sims' ? 'python' : 'config'"
+                    :label="$t(file.labelKey)"
+                    :readonly="readonly"
                     @update:model-value="store.setText(file.kind, $event)"
                 />
             </div>
@@ -166,6 +162,7 @@
 <script setup>
 import { computed, inject, ref } from "vue";
 import SubtabNav from "@/components/elements/SubtabNav.vue";
+import HighlightedText from "@/components/elements/HighlightedText.vue";
 import { useLocalBuildStore } from "@/stores/localBuild";
 import FileSystem from "@/js/FileSystem";
 import Clipboard from "@/js/Clipboard";
