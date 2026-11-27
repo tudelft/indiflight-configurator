@@ -16,7 +16,7 @@
         <p v-if="job.state === 'image'" class="text-xs text-muted">{{ $t("simulationImageNote") }}</p>
 
         <!-- Three.js visualization served by the sim's Flask app inside the container -->
-        <div v-if="sim.visUrl" class="flex flex-col gap-1">
+        <div v-if="sim.visUrl" ref="visEl" class="flex flex-col gap-1">
             <div class="flex flex-wrap items-center gap-2 text-xs">
                 <span class="font-semibold">{{ $t("simulationVisualization") }}</span>
                 <a :href="sim.visUrl" target="_blank" rel="noopener" class="font-mono text-primary">
@@ -137,6 +137,17 @@ const hostNoVis = computed(() => job.value.args?.includes("--no-vis"));
 
 const progressPercent = computed(() =>
     sim.progress.total ? Math.min(100, (100 * sim.progress.done) / sim.progress.total) : null,
+);
+
+const visEl = ref(null);
+// The wheel over the iframe zooms the 3D view, so bring it into view once instead of making the user scroll to it
+watch(
+    () => sim.visUrl,
+    async (url) => {
+        if (!url) return;
+        await nextTick();
+        visEl.value?.scrollIntoView({ behavior: "smooth", block: "start" });
+    },
 );
 
 const visKey = ref(0);

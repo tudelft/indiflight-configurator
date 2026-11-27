@@ -8,21 +8,23 @@
         autoresize
         spellcheck="false"
         class="w-full"
-        :ui="{ base: 'font-mono text-xs' }"
+        :ui="{ base: 'font-mono' }"
         @update:model-value="emit('update:modelValue', $event)"
         @blur="editing = false"
     />
     <div
         v-else
-        class="highlighted-text w-full overflow-auto rounded-md bg-muted p-2 text-xs font-mono"
+        ref="viewEl"
+        class="highlighted-text w-full overflow-auto rounded-md bg-muted px-2.5 py-1.5 text-sm leading-5 font-mono ring ring-inset ring-accented"
         :class="readonly ? 'opacity-75' : 'cursor-text focus-visible:outline-2 outline-primary'"
-        :style="{ maxHeight: `${maxrows * 1.5}em`, minHeight: `${Math.min(rows, 3) * 1.5}em` }"
+        :style="{ maxHeight: `${maxrows * 1.25 + 0.75}rem`, minHeight: `${Math.min(rows, 3) * 1.25 + 0.75}rem` }"
         :tabindex="readonly ? undefined : 0"
         :role="readonly ? undefined : 'textbox'"
         :aria-label="label"
-        @click="startEditing"
-        @keydown.enter.self.prevent="startEditing"
-        @focus="startEditing"
+        @pointerdown="pointerDown = true"
+        @click="startEditing(selectedRange())"
+        @keydown.enter.self.prevent="startEditing()"
+        @focus="onFocus"
         v-html="html"
     />
 </template>
@@ -71,11 +73,42 @@ watch(
     { immediate: true },
 );
 
-async function startEditing() {
+// A mouse press focuses the div before the click lands; swapping the view then would lose the selection.
+let pointerDown = false;
+const viewEl = ref(null);
+
+function onFocus() {
+    if (pointerDown) return;
+    startEditing();
+}
+
+/** Selection in the highlighted view as character offsets into the text, or null if outside it. */
+function selectedRange() {
+    const sel = window.getSelection();
+    const root = viewEl.value;
+    if (!root || !sel?.rangeCount || !root.contains(sel.anchorNode) || !root.contains(sel.focusNode)) return null;
+    const offset = (node, off) => {
+        const r = document.createRange();
+        r.selectNodeContents(root);
+        r.setEnd(node, off);
+        return r.toString().length;
+    };
+    const a = offset(sel.anchorNode, sel.anchorOffset);
+    const f = offset(sel.focusNode, sel.focusOffset);
+    return [Math.min(a, f), Math.max(a, f)];
+}
+
+/** @param {[number, number] | undefined} range caret or selection to restore; defaults to the end */
+async function startEditing(range) {
+    pointerDown = false;
     if (props.readonly || editing.value) return;
     editing.value = true;
     await nextTick();
-    textarea.value?.textareaRef?.focus();
+    const el = textarea.value?.textareaRef;
+    if (!el) return;
+    el.focus();
+    const [start, end] = range ?? [props.modelValue.length, props.modelValue.length];
+    el.setSelectionRange(start, end);
 }
 </script>
 
