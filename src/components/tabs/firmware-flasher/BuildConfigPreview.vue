@@ -118,7 +118,7 @@
             </details>
         </div>
 
-        <!-- Raw files, editable; edits are mounted over the repo file for the build only -->
+        <!-- Raw files, read-only. To change one, edit it on disk and reload, or import another file for this job. -->
         <div v-else class="grid gap-3 md:grid-cols-2">
             <div v-for="file in files" :key="file.kind" class="flex flex-col gap-1">
                 <div class="flex items-center justify-between gap-2">
@@ -139,20 +139,25 @@
                         <UButton
                             size="xs"
                             variant="ghost"
-                            icon="i-lucide-undo-2"
-                            :disabled="readonly || !file.modified"
-                            @click="store.setText(file.kind, null)"
+                            icon="i-lucide-refresh-cw"
+                            :disabled="readonly"
+                            @click="reloadFile(file.kind)"
                         >
-                            {{ $t("localBuildRevert") }}
+                            {{ $t("localBuildReloadDisk") }}
                         </UButton>
                     </span>
                 </div>
+                <UAlert
+                    :color="file.modified ? 'warning' : 'success'"
+                    variant="subtle"
+                    :icon="file.modified ? 'i-lucide-triangle-alert' : 'i-lucide-check-circle'"
+                    :title="$t(file.modified ? 'localBuildFileDiffers' : 'localBuildFileOnDisk')"
+                    :description="$t(file.modified ? 'localBuildFileDiffersNote' : 'localBuildFileOnDiskNote')"
+                />
                 <HighlightedText
-                    :model-value="store.effectiveText(file.kind)"
+                    :text="store.effectiveText(file.kind)"
                     :lang="file.kind === 'sims' ? 'python' : 'config'"
                     :label="$t(file.labelKey)"
-                    :readonly="readonly"
-                    @update:model-value="store.setText(file.kind, $event)"
                 />
             </div>
         </div>
@@ -160,7 +165,7 @@
 </template>
 
 <script setup>
-import { computed, inject, ref } from "vue";
+import { computed, inject, onBeforeUnmount, ref, watch } from "vue";
 import SubtabNav from "@/components/elements/SubtabNav.vue";
 import HighlightedText from "@/components/elements/HighlightedText.vue";
 import { useLocalBuildStore } from "@/stores/localBuild";
@@ -277,6 +282,20 @@ const files = computed(
 function copyCliScript() {
     Clipboard.writeText([...merged.value.cliScript, "save"].join("\n"), () => gui_log($t("localBuildCliCopied")));
 }
+
+function reloadFile(kind) {
+    store.loadFile(kind).catch((e) => gui_log(`${$t("localBuildReloadDisk")}: ${e.message}`));
+}
+
+// Edits made in an external editor show up when the user comes back to this window
+function refreshFiles() {
+    for (const { kind } of files.value) {
+        store.refreshFromDisk?.(kind)?.catch(() => {});
+    }
+}
+watch(view, (v) => v === "files" && refreshFiles());
+window.addEventListener("focus", refreshFiles);
+onBeforeUnmount(() => window.removeEventListener("focus", refreshFiles));
 
 async function importFile({ kind, ext = ".txt" }) {
     const file = await FileSystem.pickOpenFile($t("localBuildConfigFiles"), [ext]);

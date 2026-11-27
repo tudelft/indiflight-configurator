@@ -10493,7 +10493,22 @@
         "message": "Global"
     },
     "localBuildImport": {
-        "message": "Import"
+        "message": "Import another file"
+    },
+    "localBuildReloadDisk": {
+        "message": "Reload from disk"
+    },
+    "localBuildFileOnDisk": {
+        "message": "Identical to the file on disk"
+    },
+    "localBuildFileOnDiskNote": {
+        "message": "Edit the file in your own editor, then reload it here. Use Ctrl+F to search."
+    },
+    "localBuildFileDiffers": {
+        "message": "DIFFERS from the file on disk"
+    },
+    "localBuildFileDiffersNote": {
+        "message": "This is the imported file, and it is what will be used. The file on disk is ignored until you reload it."
     },
     "localBuildRevert": {
         "message": "Revert"

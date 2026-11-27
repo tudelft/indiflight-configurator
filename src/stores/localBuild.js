@@ -140,6 +140,16 @@ export const useLocalBuildStore = defineStore("localBuild", () => {
         repoText[kind] = name ? await client.value.configFile(kind, name) : "";
     }
 
+    /** Re-read a config file from disk, keeping an imported override: picks up edits made in an external editor. */
+    async function refreshFromDisk(kind) {
+        const name = kind === "boards" ? board.value : profile.value;
+        if (!name) return;
+        const text = await client.value.configFile(kind, name);
+        if (name === (kind === "boards" ? board.value : profile.value)) {
+            repoText[kind] = text;
+        }
+    }
+
     async function selectBoard(name) {
         board.value = name;
         persist();
@@ -282,6 +292,7 @@ export const useLocalBuildStore = defineStore("localBuild", () => {
         refreshInfo,
         refreshConfigs,
         loadFile,
+        refreshFromDisk,
         selectBoard,
         selectProfile,
         setText,

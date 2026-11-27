@@ -115,6 +115,16 @@ export const useSimulationStore = defineStore("simulation", () => {
         repoText[kind] = name ? await daemon.client.configFile(kind, name) : "";
     }
 
+    /** Re-read a file from disk, keeping an imported override: picks up edits made in an external editor. */
+    async function refreshFromDisk(kind) {
+        const name = kind === "sims" ? sim.value : profile.value;
+        if (!name) return;
+        const text = await daemon.client.configFile(kind, name);
+        if (name === (kind === "sims" ? sim.value : profile.value)) {
+            repoText[kind] = text;
+        }
+    }
+
     async function selectSim(name) {
         sim.value = name;
         persist();
@@ -350,6 +360,7 @@ export const useSimulationStore = defineStore("simulation", () => {
         refresh,
         rescan,
         loadFile,
+        refreshFromDisk,
         selectSim,
         selectProfile,
         setText,
