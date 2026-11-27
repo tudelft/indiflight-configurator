@@ -4506,13 +4506,13 @@
         "message": "Downloading"
     },
     "blackboxLogsUploadTitle": {
-        "message": "Upload configuration"
+        "message": "Upload-server configuration"
     },
     "blackboxLogsUploadNote": {
-        "message": "Send downloaded logs to a server running the MAVLab log database web UI. Create an API key with the logs:upload scope on your account page there and paste it here. Logs the server already has are skipped."
+        "message": "Send downloaded logs to a server running the MAVLab log database web UI. Create an API key with the read and logs:upload scope on your account page there and paste it here. Logs the server already has are skipped."
     },
     "blackboxLogsUploadKeyWarning": {
-        "message": "The key is stored in this browser. Create it with only the logs:upload scope (and an expiry if the server offers one), so that it can't read or change anything else if it leaks. Revoke it on the account page when you stop using this browser."
+        "message": "The key is stored in this browser. Create it with only the read and logs:upload scope (and an expiry if the server offers one), so that it can't read or change anything else if it leaks. Revoke it on the account page when you stop using this browser."
     },
     "blackboxLogsUploadUrl": {
         "message": "Server URL"

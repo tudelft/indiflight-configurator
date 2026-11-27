@@ -1,6 +1,6 @@
 /**
  * Client for the log database web UI (tudelft/paparazzi_log_parsing, `webui/`), upload side only.
- * Authenticates with an API key from the account page (`logdb_...`, scope `logs:upload`).
+ * Authenticates with an API key from the account page (`logdb_...`, scope `read` and `logs:upload`).
  * Routes: POST /api/logs/check, POST /api/upload (multipart), GET /api/ingest/<id>, GET /api/status,
  * POST /api/attachments (raw body, metadata in the X-Attachment-Metadata header), GET /api/tags (needs scope `read`).
  */
