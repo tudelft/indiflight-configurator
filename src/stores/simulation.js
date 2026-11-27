@@ -278,6 +278,8 @@ export const useSimulationStore = defineStore("simulation", () => {
         for (const name of names) {
             setUpload(name, "queued");
         }
+        // Read once, so every log of this batch gets the same tags
+        const tags = logbook.uploadTags("simulation");
         let attachments = [];
         try {
             attachments = logbook.attachSimulationSetup ? await setupAttachments() : [];
@@ -295,7 +297,7 @@ export const useSimulationStore = defineStore("simulation", () => {
             }
             setUpload(name, "uploading");
             try {
-                const { state, error } = await logbook.upload(name, await fetchArtifact(name), attachments);
+                const { state, error } = await logbook.upload(name, await fetchArtifact(name), attachments, tags);
                 setUpload(name, state, error);
             } catch (error) {
                 console.error("Could not fetch the log for upload", error);

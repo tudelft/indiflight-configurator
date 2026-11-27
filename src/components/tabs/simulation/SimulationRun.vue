@@ -41,6 +41,19 @@
         <!-- Blackbox logs the SIL wrote to logs-mockup -->
         <div v-if="job.artifacts?.length" class="flex flex-wrap items-center gap-2 text-xs">
             <span class="font-semibold">{{ $t("simulationLogs") }}</span>
+            <template v-for="a in viewerLogs" :key="`upload-${a.name}`">
+                <LogbookUploadState v-if="sim.uploads[a.name]" :upload="sim.uploads[a.name]" />
+                <UButton
+                    v-if="logbook.configured"
+                    size="xs"
+                    variant="ghost"
+                    icon="i-lucide-cloud-upload"
+                    :loading="uploadBusy(a.name)"
+                    @click="sim.uploadLogs([a.name])"
+                >
+                    {{ $t("simulationUploadLog", { name: a.name }) }}
+                </UButton>
+            </template>
             <UButton
                 v-for="a in job.artifacts"
                 :key="a.name"
@@ -74,20 +87,8 @@
             >
                 {{ $t("simulationOpenInFlightPlotter", { name: a.name }) }}
             </UButton>
-            <template v-for="a in viewerLogs" :key="`upload-${a.name}`">
-                <LogbookUploadState v-if="sim.uploads[a.name]" :upload="sim.uploads[a.name]" />
-                <UButton
-                    v-if="logbook.configured"
-                    size="xs"
-                    variant="ghost"
-                    icon="i-lucide-cloud-upload"
-                    :loading="uploadBusy(a.name)"
-                    @click="sim.uploadLogs([a.name])"
-                >
-                    {{ $t("simulationUploadLog", { name: a.name }) }}
-                </UButton>
-            </template>
         </div>
+        <LogbookTags v-if="logbook.configured && viewerLogs.length" context="simulation" />
 
         <pre
             ref="logEl"
@@ -104,6 +105,7 @@
 <script setup>
 import { computed, inject, nextTick, ref, watch } from "vue";
 import UiBox from "@/components/elements/UiBox.vue";
+import LogbookTags from "@/components/logbook/LogbookTags.vue";
 import LogbookUploadState from "@/components/logbook/LogbookUploadState.vue";
 import { useLogbookStore } from "@/stores/logbook";
 import { useSimulationStore } from "@/stores/simulation";

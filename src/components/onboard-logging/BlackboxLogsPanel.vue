@@ -135,6 +135,7 @@
             </UiBox>
 
             <LogbookSettings />
+            <LogbookTags v-if="logbook.configured && logbook.autoUpload" class="mt-4" />
             <ConfigDumpSwitch class="mt-4" :disabled="busy" />
         </div>
 
@@ -256,9 +257,12 @@ import { openLogInBlackboxViewer } from "@/blackbox-viewer/vue_init";
 import { useFlightPlotterStore } from "@/stores/flightPlotter";
 import ConfigDumpSwitch from "@/components/logbook/ConfigDumpSwitch.vue";
 import LogbookSettings from "@/components/logbook/LogbookSettings.vue";
+import LogbookTags from "@/components/logbook/LogbookTags.vue";
 import LogbookUploadState from "@/components/logbook/LogbookUploadState.vue";
+import { useLogbookStore } from "@/stores/logbook";
 
 const { t } = useTranslation();
+const logbook = useLogbookStore();
 const {
     files,
     selectedNames,

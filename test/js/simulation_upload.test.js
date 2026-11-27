@@ -70,6 +70,17 @@ describe("simulation log upload", () => {
         expect(sim.blackboxLogs.map((a) => a.name)).not.toContain("build.log");
     });
 
+    it("tags every simulation log 'simulation', besides the chosen tags, and leaves blackbox tags out", async () => {
+        const { sim, logbook } = setup();
+        await sim.start();
+        await sim.uploadLogs(["LOG00001.BFL"]);
+        expect(upload.mock.calls[0][3]).toEqual(["simulation"]);
+
+        logbook.tags = { blackbox: ["bench test"], simulation: ["sim-study-3", "Simulation"] };
+        await sim.uploadLogs(["LOG00002.BFL"]);
+        expect(upload.mock.calls[1][3]).toEqual(["simulation", "sim-study-3"]);
+    });
+
     it("marks a failed upload and goes on with the next log", async () => {
         upload.mockRejectedValueOnce(new Error("401 invalid API key")).mockResolvedValue({ status: "skipped" });
         vi.spyOn(console, "error").mockImplementation(() => {});

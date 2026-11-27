@@ -660,9 +660,9 @@ export function useBlackboxLogs() {
         uploads.value = { ...uploads.value, [name]: { state, error } };
     }
 
-    async function uploadLog(name, bytes, attachments) {
+    async function uploadLog(name, bytes, attachments, tags) {
         setUpload(name, "uploading");
-        const { state, error } = await logbook.upload(name, bytes, attachments);
+        const { state, error } = await logbook.upload(name, bytes, attachments, tags);
         setUpload(name, state, error);
     }
 
@@ -670,7 +670,8 @@ export function useBlackboxLogs() {
         setUpload(name, "queued");
         // Taken now, not when the upload runs: the first log of a batch gets the dump and no other does
         const dump = logbook.takeConfigDump();
-        uploadQueue = uploadQueue.then(() => uploadLog(name, bytes, dump ? [dump] : []));
+        const tags = logbook.uploadTags("blackbox");
+        uploadQueue = uploadQueue.then(() => uploadLog(name, bytes, dump ? [dump] : [], tags));
         return uploadQueue;
     }
 

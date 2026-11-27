@@ -2,7 +2,7 @@
  * Client for the log database web UI (tudelft/paparazzi_log_parsing, `webui/`), upload side only.
  * Authenticates with an API key from the account page (`logdb_...`, scope `logs:upload`).
  * Routes: POST /api/logs/check, POST /api/upload (multipart), GET /api/ingest/<id>, GET /api/status,
- * POST /api/attachments (raw body, metadata in the X-Attachment-Metadata header).
+ * POST /api/attachments (raw body, metadata in the X-Attachment-Metadata header), GET /api/tags (needs scope `read`).
  */
 
 export class LogbookError extends Error {
@@ -24,6 +24,32 @@ export function normalizeServerUrl(input) {
         return "";
     }
     return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+}
+
+// The server's limits (webui/tags.py): a name has 1 to 40 characters and no commas, an entry at most 20 tags.
+export const TAG_NAME_MAX = 40;
+export const TAGS_PER_ENTRY_MAX = 20;
+
+/**
+ * Tag names from what the user typed: split at commas, spaces collapsed, cut to the server's length, and without
+ * repeats (the server matches names without case).
+ *
+ * @param {string[]} values
+ * @returns {string[]}
+ */
+export function cleanTags(values) {
+    const out = [];
+    const seen = new Set();
+    for (const value of values) {
+        for (const part of String(value ?? "").split(",")) {
+            const name = part.split(/\s+/).filter(Boolean).join(" ").slice(0, TAG_NAME_MAX).trim();
+            if (name && !seen.has(name.toLowerCase())) {
+                seen.add(name.toLowerCase());
+                out.push(name);
+            }
+        }
+    }
+    return out;
 }
 
 /** @param {Blob|Uint8Array} data */
@@ -71,6 +97,15 @@ export class LogbookClient {
     /** Checks the server and the key. */
     status() {
         return this.request("/api/status");
+    }
+
+    /**
+     * Every tag on the server.
+     *
+     * @returns {Promise<{id: number, name: string, hidden: boolean, entries: number}[]>}
+     */
+    async tags() {
+        return (await this.request("/api/tags")).tags ?? [];
     }
 
     /**
@@ -134,18 +169,23 @@ export class LogbookClient {
      * @param {string} name   stored name; a leading folder named after a fleet aircraft links the log to it
      * @param {Blob|Uint8Array} bytes
      * @param {LogAttachment[]} [attachments]  files to attach to the log, also when the server already had it
+     * @param {string[]} [tags]  tag names for the log's flights; new names create tags
      * @returns {Promise<{status: "accepted"|"skipped", ingestId?: number, logId?: number, attachError?: string}>}
      *   attachError: the log is on the server, but attaching the files failed
      */
-    async upload(name, bytes, attachments = []) {
+    async upload(name, bytes, attachments = [], tags = []) {
         const blob = new Blob([bytes], { type: "application/octet-stream" });
         const known = await this.known(await sha256Hex(blob));
         let result;
-        if (known?.mine && known.has_log) {
+        // With tags the log is sent again: the server then adds the tags to the flights it already has.
+        if (known?.mine && known.has_log && !tags.length) {
             result = { status: "skipped", logId: known.id };
         } else {
             const form = new FormData();
             form.append("names", name);
+            for (const tag of tags) {
+                form.append("tags", tag);
+            }
             form.append("files", blob, name.split("/").pop());
             const reply = await this.request("/api/upload", { method: "POST", body: form });
             const receipt = reply.results?.[0];

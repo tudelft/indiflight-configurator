@@ -1,5 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { LogbookClient, LogbookError, normalizeServerUrl, sha256Hex } from "../../src/js/indiflight/logbookClient";
+import {
+    cleanTags,
+    LogbookClient,
+    LogbookError,
+    normalizeServerUrl,
+    sha256Hex,
+} from "../../src/js/indiflight/logbookClient";
 
 const json = (body, status = 200) =>
     new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
@@ -59,6 +65,49 @@ describe("LogbookClient", () => {
 
         known.has_log = false;
         expect((await client.upload("a.BFL", new Uint8Array([9]))).status).toBe("accepted");
+    });
+
+    describe("tags", () => {
+        it("cleans typed tags like the server: commas split, spaces collapse, no repeats in any case", () => {
+            expect(cleanTags(["  bench   test ", "a,b,,", "A", "x".repeat(50)])).toEqual([
+                "bench test",
+                "a",
+                "b",
+                "x".repeat(40),
+            ]);
+        });
+
+        it("lists the server's tags", async () => {
+            const fetchMock = vi.fn(async () =>
+                json({ tags: [{ id: 1, name: "sim-study-3", hidden: true, entries: 2 }] }),
+            );
+            vi.stubGlobal("fetch", fetchMock);
+            expect(await new LogbookClient("https://s", "k").tags()).toEqual([
+                { id: 1, name: "sim-study-3", hidden: true, entries: 2 },
+            ]);
+            expect(fetchMock.mock.calls[0][0]).toBe("https://s/api/tags");
+        });
+
+        it("sends each tag as a form field, and re-sends a log the user has so its flights get them", async () => {
+            const forms = [];
+            vi.stubGlobal(
+                "fetch",
+                vi.fn(async (url, init) => {
+                    if (url.endsWith("/api/logs/check")) {
+                        return json({
+                            known: { [await sha256Hex(new Uint8Array([9]))]: { has_log: true, mine: true } },
+                        });
+                    }
+                    forms.push(init.body);
+                    return json({ results: [{ status: "accepted", ingest_id: 3 }] });
+                }),
+            );
+            const client = new LogbookClient("https://s", "k");
+            const result = await client.upload("a.BFL", new Uint8Array([9]), [], ["simulation", "bench test"]);
+
+            expect(result).toEqual({ status: "accepted", ingestId: 3 });
+            expect(forms[0].getAll("tags")).toEqual(["simulation", "bench test"]);
+        });
     });
 
     it("reports server messages and network failures", async () => {

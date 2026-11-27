@@ -4506,7 +4506,7 @@
         "message": "Downloading"
     },
     "blackboxLogsUploadTitle": {
-        "message": "Upload to log database"
+        "message": "Upload configuration"
     },
     "blackboxLogsUploadNote": {
         "message": "Send downloaded logs to a server running the MAVLab log database web UI. Create an API key with the logs:upload scope on your account page there and paste it here. Logs the server already has are skipped."
@@ -4525,6 +4525,25 @@
     },
     "blackboxLogsUploadFolderHelp": {
         "message": "Leave empty: the server reads the craft name from the log header. A folder named after one fleet aircraft overrides it."
+    },
+    "logbookTags": {
+        "message": "Tags"
+    },
+    "logbookTagsPlaceholder": {
+        "message": "Choose or type tags"
+    },
+    "logbookTagsHelp": {
+        "message": "The next uploads get these tags. A new name creates the tag on the server."
+    },
+    "logbookTagsNoList": {
+        "message": "The server's tags could not be listed ({{error}}); type them out. Listing them needs an API key with the read scope.",
+        "description": "{{error}} is the server's or browser's error message."
+    },
+    "logbookTagsTooMany": {
+        "message": "The server accepts at most {{max}} tags per log."
+    },
+    "logbookTagsSimulationFixed": {
+        "message": "Every simulation log gets this tag."
     },
     "blackboxLogsUploadAuto": {
         "message": "Upload logs automatically after downloading them"

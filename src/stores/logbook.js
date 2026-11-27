@@ -1,9 +1,12 @@
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 import { get as getConfig, set as setConfig } from "@/js/ConfigStorage";
-import { LogbookClient, normalizeServerUrl } from "@/js/indiflight/logbookClient";
+import { cleanTags, LogbookClient, normalizeServerUrl } from "@/js/indiflight/logbookClient";
 
 const STORAGE_KEY = "logbook";
+
+// Every simulation log gets this tag, besides the ones the user chooses.
+export const SIMULATION_TAG = "simulation";
 
 /** Connection to the log database and the choice to upload downloaded blackbox logs to it. */
 export const useLogbookStore = defineStore("logbook", () => {
@@ -17,6 +20,17 @@ export const useLogbookStore = defineStore("logbook", () => {
     const folder = ref(saved.folder ?? "");
     // Simulation tab: attach the script and profile that produced a log to it.
     const attachSimulationSetup = ref(saved.attachSimulationSetup ?? true);
+    // Tags for the next uploads, chosen separately for flight logs and simulation logs.
+    const tags = ref({
+        blackbox: cleanTags(saved.tags?.blackbox ?? []),
+        simulation: cleanTags(saved.tags?.simulation ?? []),
+    });
+
+    // The server's tags, for suggestions. Listing them needs the key's `read` scope; without it tags are typed out.
+    /** @type {import("vue").Ref<{id: number, name: string, hidden: boolean, entries: number}[]>} */
+    const knownTags = ref([]);
+    const knownTagsError = ref("");
+    const loadingTags = ref(false);
 
     // Blackbox tab: the flight controller's configuration, read just before downloading logs it flew with.
     // Held in memory only and used once, so it can never end up on a log it did not fly.
@@ -33,12 +47,39 @@ export const useLogbookStore = defineStore("logbook", () => {
                 autoUpload: autoUpload.value,
                 folder: folder.value,
                 attachSimulationSetup: attachSimulationSetup.value,
+                tags: tags.value,
             },
         });
     }
 
     function client() {
         return new LogbookClient(url.value, token.value);
+    }
+
+    async function loadTags() {
+        if (!configured.value) {
+            knownTags.value = [];
+            return;
+        }
+        loadingTags.value = true;
+        try {
+            knownTags.value = await client().tags();
+            knownTagsError.value = "";
+        } catch (error) {
+            knownTags.value = [];
+            knownTagsError.value = error.message;
+        } finally {
+            loadingTags.value = false;
+        }
+    }
+
+    /**
+     * The tags an upload from this context gets.
+     * @param {"blackbox"|"simulation"} context
+     */
+    function uploadTags(context) {
+        const chosen = tags.value[context] ?? [];
+        return cleanTags(context === "simulation" ? [SIMULATION_TAG, ...chosen] : chosen);
     }
 
     /** Stored name on the server for a log file name. */
@@ -67,12 +108,13 @@ export const useLogbookStore = defineStore("logbook", () => {
      * @param {string} name  file name, before the folder is applied
      * @param {Blob|Uint8Array} bytes
      * @param {import("@/js/indiflight/logbookClient").LogAttachment[]} [attachments]
+     * @param {string[]} [tagNames]
      * @returns {Promise<{state: "uploaded"|"skipped"|"partial"|"failed", error?: string}>}
      *   partial: the log is on the server, the attachments are not
      */
-    async function upload(name, bytes, attachments = []) {
+    async function upload(name, bytes, attachments = [], tagNames = []) {
         try {
-            const { status, attachError } = await client().upload(storedName(name), bytes, attachments);
+            const { status, attachError } = await client().upload(storedName(name), bytes, attachments, tagNames);
             if (attachError) {
                 return { state: "partial", error: attachError };
             }
@@ -89,6 +131,12 @@ export const useLogbookStore = defineStore("logbook", () => {
         autoUpload,
         folder,
         attachSimulationSetup,
+        tags,
+        knownTags,
+        knownTagsError,
+        loadingTags,
+        loadTags,
+        uploadTags,
         configured,
         configDump,
         takeConfigDump,

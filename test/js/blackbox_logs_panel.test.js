@@ -101,6 +101,7 @@ describe("BlackboxLogsPanel (virtual mode)", () => {
             token: "logdb_x",
             autoUpload: true,
             folder: "Hex 1/",
+            tags: { blackbox: ["bench test"], simulation: ["sim-study-3"] },
         });
         const upload = vi
             .spyOn(LogbookClient.prototype, "upload")
@@ -118,6 +119,7 @@ describe("BlackboxLogsPanel (virtual mode)", () => {
         await vi.waitFor(() => expect(upload).toHaveBeenCalledTimes(1), { timeout: 3000 });
         expect(upload.mock.calls[0][0]).toBe("Hex 1/LOG00003.BFL");
         expect(upload.mock.calls[0][1].size).toBe(42_123);
+        expect(upload.mock.calls[0][3]).toEqual(["bench test"]);
         await vi.waitFor(() => expect(container.textContent).toContain("blackboxLogsUploadStateUploaded"));
     });
 
